@@ -3,12 +3,21 @@ from pathlib import Path
 import pandas as pd
 from catboost import CatBoostRegressor
 
-from src.features import build_features
+from ml.src.features import build_features
 
 
-DATA_DIR = Path("dataset")
-MODEL_PATH = Path("artifacts/catboost_final.cbm")
-OUTPUT_PATH = Path("submissions/submission_simple_catboost.csv")
+ML_ROOT = Path(__file__).resolve().parents[1]
+
+DATA_DIR = ML_ROOT / "dataset"
+ARTIFACTS_DIR = ML_ROOT / "artifacts"
+SUBMISSIONS_DIR = ML_ROOT / "submissions"
+
+MODEL_PATH = ARTIFACTS_DIR / "catboost_final.cbm"
+
+OUTPUT_PATH = (
+    SUBMISSIONS_DIR
+    / "submission_simple_catboost.csv"
+)
 
 
 def load_validate_data() -> tuple[

@@ -8,19 +8,27 @@ from sklearn.metrics import mean_absolute_error
 from .features import FEATURE_NAMES, build_features
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+ML_ROOT = Path(__file__).resolve().parents[1]
 
-DATA_DIR = PROJECT_ROOT / "dataset"
-ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
+DATA_DIR = ML_ROOT / "dataset"
+ARTIFACTS_DIR = ML_ROOT / "artifacts"
 
 MODEL_PATH = ARTIFACTS_DIR / "catboost_final.cbm"
+
 FEATURE_IMPORTANCE_PATH = (
-    ARTIFACTS_DIR / "feature_importance.csv"
+    ARTIFACTS_DIR
+    / "feature_importance.csv"
 )
+
 TEST_PREDICTIONS_PATH = (
-    ARTIFACTS_DIR / "test_predictions.csv"
+    ARTIFACTS_DIR
+    / "test_predictions.csv"
 )
-METRICS_PATH = ARTIFACTS_DIR / "metrics.json"
+
+METRICS_PATH = (
+    ARTIFACTS_DIR
+    / "metrics.json"
+)
 
 
 MODEL_PARAMS = {

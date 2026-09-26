@@ -1,4 +1,5 @@
 .venv
 .env
 __pycache__
-dataset/ndtp-telemetry-emulator.tar
+**/ndtp-telemetry-emulator.tar
+catboost_info

@@ -4,7 +4,8 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error
 
 
-DATA_DIR = Path("dataset")
+ML_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = ML_ROOT / "dataset"
 
 
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:

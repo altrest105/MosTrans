@@ -2,10 +2,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.features import build_features
+from ml.src.features import build_features
 
 
-DATA_DIR = Path("dataset")
+ML_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = ML_ROOT / "dataset"
 
 
 def load_test_data() -> tuple[
