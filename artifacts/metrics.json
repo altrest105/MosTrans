@@ -1,0 +1,7 @@
+{
+  "baseline_mae": 93.35977337110482,
+  "catboost_test_mae": 64.97518564747736,
+  "improvement_mae": 28.38458772362746,
+  "model_better_count": 215,
+  "model_worse_count": 138
+}
