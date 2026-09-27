@@ -48,9 +48,9 @@ docker compose down
 
 Скриншот холодного запуска с зафиксированным временем:
 
-[Открыть скриншот времени запуска](docs/screenshots/docker_proof.jpg)
+[Открыть скриншот времени запуска](docs/screenshots/docker_proof.png)
 
-![Холодный запуск Docker Compose](docs/screenshots/docker_proof.jpg)
+![Холодный запуск Docker Compose](docs/screenshots/docker_proof.png)
 
 ---
 
