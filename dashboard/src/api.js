@@ -24,3 +24,14 @@ export async function loadDashboardData() {
 
   return { system, metrics, vehicles, predictions, trails };
 }
+
+
+export async function loadEvidenceMetrics() {
+  const [metrics, performance, horizon] = await Promise.all([
+    getJson("/metrics"),
+    getJson("/audit/performance"),
+    getJson("/audit/horizon"),
+  ]);
+
+  return { metrics, performance, horizon };
+}

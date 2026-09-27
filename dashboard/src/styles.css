@@ -534,3 +534,298 @@ button { font: inherit; }
 /* Статус завершённого суточного рейса в карточке. */
 .service-finished { color: var(--muted); }
 .next-stop-finished { color: var(--muted) !important; font-weight: 600; }
+
+/* Переключатель между диспетчерской и страницей доказательных метрик. */
+.view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.view-toggle button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.view-toggle button:hover { color: var(--text); }
+.view-toggle button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 5px rgba(0,0,0,.1);
+}
+
+/* Страница верифицированных и runtime-метрик. */
+.metrics-page {
+  min-height: calc(100vh - 72px);
+  padding: 28px 30px 44px;
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+.metrics-hero {
+  max-width: 1500px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.metrics-eyebrow,
+.metrics-section-head > div > span {
+  display: block;
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.metrics-hero h1 {
+  margin: 7px 0 0;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.metrics-hero p {
+  max-width: 760px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.runtime-live {
+  flex: 0 0 auto;
+  min-width: 190px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  text-align: right;
+}
+.runtime-live span { display: block; font-size: 13px; font-weight: 700; }
+.runtime-live small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+.runtime-live.ok span { color: var(--green); }
+.runtime-live.error span { color: var(--red); }
+
+.metrics-section {
+  max-width: 1500px;
+  margin: 28px auto 0;
+}
+
+.metrics-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 14px;
+}
+.metrics-section-head h2 {
+  margin: 4px 0 0;
+  font-size: 21px;
+  letter-spacing: -0.025em;
+}
+.metrics-section-head > p {
+  max-width: 540px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.evidence-card {
+  min-width: 0;
+  min-height: 190px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 5px 18px rgba(0,0,0,.05);
+}
+.evidence-card.good { border-color: color-mix(in srgb, var(--green) 38%, var(--border)); }
+.evidence-card.warning { border-color: color-mix(in srgb, var(--yellow) 45%, var(--border)); }
+
+.evidence-card-head {
+  min-height: 27px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.evidence-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--blue);
+}
+.evidence-card.good .evidence-icon { color: var(--green); }
+.evidence-card.warning .evidence-icon { color: var(--yellow); }
+
+.evidence-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  white-space: nowrap;
+}
+.evidence-badge.verified { color: var(--green); border-color: color-mix(in srgb, var(--green) 35%, var(--border)); }
+.evidence-badge.local { color: var(--blue); border-color: color-mix(in srgb, var(--blue) 35%, var(--border)); }
+.evidence-badge.runtime { color: var(--yellow); border-color: color-mix(in srgb, var(--yellow) 35%, var(--border)); }
+.evidence-badge.warning { color: var(--red); border-color: color-mix(in srgb, var(--red) 35%, var(--border)); }
+.evidence-badge.derived { color: var(--muted); }
+
+.evidence-label {
+  display: block;
+  margin-top: 17px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.evidence-value {
+  display: block;
+  margin-top: 5px;
+  font-size: clamp(27px, 2.5vw, 38px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+.evidence-subvalue {
+  display: block;
+  margin-top: 7px;
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.35;
+}
+.evidence-card p {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.runtime-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--border);
+}
+.runtime-strip > div {
+  min-width: 0;
+  padding: 12px 14px;
+  background: var(--surface);
+}
+.runtime-strip span { display: block; color: var(--muted); font-size: 9px; }
+.runtime-strip strong { display: block; margin-top: 5px; font-size: 16px; font-variant-numeric: tabular-nums; }
+
+.evidence-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.evidence-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.evidence-table th,
+.evidence-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  text-align: left;
+  vertical-align: middle;
+}
+.evidence-table th {
+  color: var(--muted);
+  background: var(--surface-2);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.evidence-table tbody tr:last-child td { border-bottom: 0; }
+.evidence-table td:nth-child(2) { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.evidence-table td:nth-child(3) { color: var(--muted); }
+
+.evidence-footnote {
+  margin-top: 10px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1180px) {
+  .topbar { grid-template-columns: minmax(180px, .7fr) minmax(390px, 1.3fr) minmax(360px, 1fr); }
+  .evidence-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .runtime-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 850px) {
+  .metrics-page { padding: 22px 16px 36px; }
+  .metrics-hero, .metrics-section-head { align-items: flex-start; flex-direction: column; }
+  .metrics-section-head > p { text-align: left; }
+  .evidence-grid { grid-template-columns: 1fr; }
+  .runtime-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .runtime-live { width: 100%; text-align: left; }
+}
+
+/* Упрощённая страница метрик: без badge-блоков и нижнего аудита. */
+.static-evidence-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.static-evidence-grid .evidence-card {
+  min-height: 160px;
+}
+
+@media (max-width: 1180px) {
+  .static-evidence-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 850px) {
+  .static-evidence-grid { grid-template-columns: 1fr; }
+}

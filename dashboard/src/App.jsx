@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BusFront, Moon, Sun } from "lucide-react";
+import { BarChart3, BusFront, Moon, Sun } from "lucide-react";
 import { loadDashboardData } from "./api";
 import MapPanel from "./components/MapPanel";
 import IncidentList from "./components/IncidentList";
+import MetricsPage from "./components/MetricsPage";
 
 const REFRESH_MS = 1000;
 
@@ -125,6 +126,7 @@ export default function App() {
   const [selectedUnitId, setSelectedUnitId] = useState(null);
   const [tab, setTab] = useState("incidents");
   const [theme, setTheme] = useState(() => localStorage.getItem("mostrans-theme") || "dark");
+  const [view, setView] = useState("dispatch");
 
   const refresh = useCallback(async () => {
     try {
@@ -272,6 +274,23 @@ export default function App() {
         </div>
 
         <div className="header-actions">
+          <div className="view-toggle" aria-label="Раздел приложения">
+            <button
+              type="button"
+              className={view === "dispatch" ? "active" : ""}
+              onClick={() => setView("dispatch")}
+            >
+              Диспетчерская
+            </button>
+            <button
+              type="button"
+              className={view === "metrics" ? "active" : ""}
+              onClick={() => setView("metrics")}
+            >
+              <BarChart3 size={15} />
+              Метрики
+            </button>
+          </div>
           <div className={`system-status ${systemClass(data.system.status, error)}`}>
             {statusMessage}
           </div>
@@ -287,10 +306,13 @@ export default function App() {
         </div>
       </header>
 
-      {data.system.status === "degraded" || error ? (
+      {view === "dispatch" && (data.system.status === "degraded" || error) ? (
         <div className="degradation-banner">{statusMessage}</div>
       ) : null}
 
+      {view === "metrics" ? (
+        <MetricsPage />
+      ) : (
       <main className="workspace">
         <section className="map-panel" aria-label="Карта транспорта">
           <MapPanel
@@ -503,6 +525,7 @@ export default function App() {
           )}
         </aside>
       </main>
+      )}
     </div>
   );
 }
