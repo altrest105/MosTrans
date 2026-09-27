@@ -1,24 +1,12 @@
 from pathlib import Path
 from time import perf_counter
+import os
 
 import numpy as np
 import pandas as pd
 from catboost import CatBoostRegressor
 
-from ml_service.schemas import (
-    PredictionRequest,
-    PredictionResponse,
-)
-
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-
-DEFAULT_MODEL_PATH = (
-    PROJECT_ROOT
-    / "ml"
-    / "artifacts"
-    / "catboost_final.cbm"
-)
+from ml_service.schemas import PredictionRequest, PredictionResponse
 
 FEATURE_NAMES = (
     "cur_dev_s",
@@ -33,66 +21,36 @@ FEATURE_NAMES = (
     "distance_to_target_m",
 )
 
+DEFAULT_MODEL_PATH = Path(
+    os.getenv(
+        "MODEL_PATH",
+        str(Path(__file__).resolve().parents[1] / "ml" / "artifacts" / "catboost_final.cbm"),
+    )
+)
+
 
 class Predictor:
-    """Обёртка над CatBoost для online-инференса."""
+    """CatBoost online inference."""
 
-    def __init__(
-        self,
-        model_path: Path = DEFAULT_MODEL_PATH,
-    ) -> None:
+    def __init__(self, model_path: Path = DEFAULT_MODEL_PATH) -> None:
         if not model_path.exists():
-            raise FileNotFoundError(
-                f"Модель не найдена: {model_path}"
-            )
+            raise FileNotFoundError(f"Модель не найдена: {model_path}")
 
         self._model = CatBoostRegressor()
+        self._model.load_model(str(model_path))
+        self.model_path = model_path
 
-        self._model.load_model(
-            str(model_path)
-        )
-
-        self._model_path = model_path
-
-    @property
-    def model_path(self) -> Path:
-        """Получить путь к загруженной модели."""
-
-        return self._model_path
-
-    def predict(
-        self,
-        request: PredictionRequest,
-    ) -> PredictionResponse:
-        """Выполнить прогноз задержки в секундах."""
-
-        row = request.model_dump()
-
-        feature_values = {
-            feature_name: (
-                np.nan
-                if row[feature_name] is None
-                else float(row[feature_name])
-            )
-            for feature_name in FEATURE_NAMES
+    def predict(self, request: PredictionRequest) -> PredictionResponse:
+        values = request.model_dump()
+        row = {
+            name: np.nan if values[name] is None else float(values[name])
+            for name in FEATURE_NAMES
         }
+        features = pd.DataFrame([row], columns=FEATURE_NAMES)
 
-        features = pd.DataFrame(
-            [feature_values],
-            columns=FEATURE_NAMES,
-        )
-
-        started_at = perf_counter()
-
-        prediction = float(
-            self._model.predict(
-                features
-            )[0]
-        )
-
-        latency_ms = (
-            perf_counter() - started_at
-        ) * 1000.0
+        started = perf_counter()
+        prediction = float(self._model.predict(features)[0])
+        latency_ms = (perf_counter() - started) * 1000.0
 
         return PredictionResponse(
             prediction=prediction,
