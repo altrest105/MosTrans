@@ -1,0 +1,1306 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="ru" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Backend &mdash; MosTrans · Документация кода</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=9ca2116e"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/translations.js?v=cd1d70c9"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Алфавитный указатель" href="genindex.html" />
+    <link rel="search" title="Поиск" href="search.html" />
+    <link rel="next" title="ML Service" href="ml_service.html" />
+    <link rel="prev" title="Архитектура" href="architecture.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            MosTrans — предиктор изменений графика
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Поиск в документации" aria-label="Поиск в документации" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Меню навигации">
+              <p class="caption" role="heading"><span class="caption-text">Содержание</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Архитектура</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Backend</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-backend.ndtp.parser">NDTP parser</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#backend.ndtp.parser.NDTPHeader"><code class="docutils literal notranslate"><span class="pre">NDTPHeader</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.NDTPHeader.peer_address"><code class="docutils literal notranslate"><span class="pre">NDTPHeader.peer_address</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.NDTPHeader.service_id"><code class="docutils literal notranslate"><span class="pre">NDTPHeader.service_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.NDTPHeader.packet_type"><code class="docutils literal notranslate"><span class="pre">NDTPHeader.packet_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.NDTPHeader.request_id"><code class="docutils literal notranslate"><span class="pre">NDTPHeader.request_id</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent"><code class="docutils literal notranslate"><span class="pre">TelemetryEvent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent.unit_id"><code class="docutils literal notranslate"><span class="pre">TelemetryEvent.unit_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent.event_time"><code class="docutils literal notranslate"><span class="pre">TelemetryEvent.event_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent.lon"><code class="docutils literal notranslate"><span class="pre">TelemetryEvent.lon</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent.lat"><code class="docutils literal notranslate"><span class="pre">TelemetryEvent.lat</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent.alt"><code class="docutils literal notranslate"><span class="pre">TelemetryEvent.alt</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent.speed"><code class="docutils literal notranslate"><span class="pre">TelemetryEvent.speed</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent.heading"><code class="docutils literal notranslate"><span class="pre">TelemetryEvent.heading</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent.location_valid"><code class="docutils literal notranslate"><span class="pre">TelemetryEvent.location_valid</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent.source_event_time"><code class="docutils literal notranslate"><span class="pre">TelemetryEvent.source_event_time</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.ndtp.parser.get_frame_size"><code class="docutils literal notranslate"><span class="pre">get_frame_size()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.ndtp.parser.parse_headers"><code class="docutils literal notranslate"><span class="pre">parse_headers()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.ndtp.parser.parse_nav00"><code class="docutils literal notranslate"><span class="pre">parse_nav00()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.ndtp.parser.parse_realtime"><code class="docutils literal notranslate"><span class="pre">parse_realtime()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.ndtp.parser.parse_frame"><code class="docutils literal notranslate"><span class="pre">parse_frame()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-backend.ndtp.receiver">NDTP receiver</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#backend.ndtp.receiver.NDTPReceiver"><code class="docutils literal notranslate"><span class="pre">NDTPReceiver</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.receiver.NDTPReceiver.running"><code class="docutils literal notranslate"><span class="pre">NDTPReceiver.running</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.receiver.NDTPReceiver.start"><code class="docutils literal notranslate"><span class="pre">NDTPReceiver.start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.ndtp.receiver.NDTPReceiver.stop"><code class="docutils literal notranslate"><span class="pre">NDTPReceiver.stop()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-backend.telemetry.state">Telemetry state</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#backend.telemetry.state.TelemetryStore"><code class="docutils literal notranslate"><span class="pre">TelemetryStore</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.telemetry.state.TelemetryStore.add"><code class="docutils literal notranslate"><span class="pre">TelemetryStore.add()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.telemetry.state.TelemetryStore.get_history"><code class="docutils literal notranslate"><span class="pre">TelemetryStore.get_history()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.telemetry.state.TelemetryStore.get_history_since"><code class="docutils literal notranslate"><span class="pre">TelemetryStore.get_history_since()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.telemetry.state.TelemetryStore.get_latest"><code class="docutils literal notranslate"><span class="pre">TelemetryStore.get_latest()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.telemetry.state.TelemetryStore.get_vehicle_ids"><code class="docutils literal notranslate"><span class="pre">TelemetryStore.get_vehicle_ids()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.telemetry.state.TelemetryStore.get_telemetry_age_s"><code class="docutils literal notranslate"><span class="pre">TelemetryStore.get_telemetry_age_s()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.telemetry.state.TelemetryStore.get_vehicle_summaries"><code class="docutils literal notranslate"><span class="pre">TelemetryStore.get_vehicle_summaries()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-backend.transport.registry">Vehicle registry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#backend.transport.registry.VehicleRegistry"><code class="docutils literal notranslate"><span class="pre">VehicleRegistry</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.transport.registry.VehicleRegistry.get_tr_id"><code class="docutils literal notranslate"><span class="pre">VehicleRegistry.get_tr_id()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-backend.schedule.service">Schedule service</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#backend.schedule.service.StopCandidate"><code class="docutils literal notranslate"><span class="pre">StopCandidate</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.StopCandidate.stop_id"><code class="docutils literal notranslate"><span class="pre">StopCandidate.stop_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.StopCandidate.planned_time"><code class="docutils literal notranslate"><span class="pre">StopCandidate.planned_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.StopCandidate.geom"><code class="docutils literal notranslate"><span class="pre">StopCandidate.geom</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.StopCandidate.address"><code class="docutils literal notranslate"><span class="pre">StopCandidate.address</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.schedule.service.TargetWindow"><code class="docutils literal notranslate"><span class="pre">TargetWindow</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.TargetWindow.tr_id"><code class="docutils literal notranslate"><span class="pre">TargetWindow.tr_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.TargetWindow.planned_time"><code class="docutils literal notranslate"><span class="pre">TargetWindow.planned_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.TargetWindow.horizon_min"><code class="docutils literal notranslate"><span class="pre">TargetWindow.horizon_min</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.TargetWindow.candidates"><code class="docutils literal notranslate"><span class="pre">TargetWindow.candidates</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.schedule.service.NextStopWindow"><code class="docutils literal notranslate"><span class="pre">NextStopWindow</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.NextStopWindow.tr_id"><code class="docutils literal notranslate"><span class="pre">NextStopWindow.tr_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.NextStopWindow.planned_time"><code class="docutils literal notranslate"><span class="pre">NextStopWindow.planned_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.NextStopWindow.schedule_position_time"><code class="docutils literal notranslate"><span class="pre">NextStopWindow.schedule_position_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.NextStopWindow.candidates"><code class="docutils literal notranslate"><span class="pre">NextStopWindow.candidates</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.schedule.service.NearestRouteStop"><code class="docutils literal notranslate"><span class="pre">NearestRouteStop</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.NearestRouteStop.stop"><code class="docutils literal notranslate"><span class="pre">NearestRouteStop.stop</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.NearestRouteStop.distance_m"><code class="docutils literal notranslate"><span class="pre">NearestRouteStop.distance_m</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.schedule.service.ScheduleService"><code class="docutils literal notranslate"><span class="pre">ScheduleService</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.ScheduleService.enabled"><code class="docutils literal notranslate"><span class="pre">ScheduleService.enabled</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.ScheduleService.find_stop"><code class="docutils literal notranslate"><span class="pre">ScheduleService.find_stop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.ScheduleService.find_target_window"><code class="docutils literal notranslate"><span class="pre">ScheduleService.find_target_window()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.ScheduleService.find_target_near_horizon"><code class="docutils literal notranslate"><span class="pre">ScheduleService.find_target_near_horizon()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.ScheduleService.service_status"><code class="docutils literal notranslate"><span class="pre">ScheduleService.service_status()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.ScheduleService.find_next_stop_window"><code class="docutils literal notranslate"><span class="pre">ScheduleService.find_next_stop_window()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.ScheduleService.find_nearest_route_stop"><code class="docutils literal notranslate"><span class="pre">ScheduleService.find_nearest_route_stop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.ScheduleService.route_for_day"><code class="docutils literal notranslate"><span class="pre">ScheduleService.route_for_day()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.schedule.service.ScheduleService.estimate_current_deviation"><code class="docutils literal notranslate"><span class="pre">ScheduleService.estimate_current_deviation()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-backend.features.live">Online features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#backend.features.live.normalize_datetime"><code class="docutils literal notranslate"><span class="pre">normalize_datetime()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.features.live.parse_point"><code class="docutils literal notranslate"><span class="pre">parse_point()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.features.live.haversine_m"><code class="docutils literal notranslate"><span class="pre">haversine_m()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.features.live.calculate_dwell_time_s"><code class="docutils literal notranslate"><span class="pre">calculate_dwell_time_s()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.features.live.LiveFeatureBuilder"><code class="docutils literal notranslate"><span class="pre">LiveFeatureBuilder</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.features.live.LiveFeatureBuilder.build"><code class="docutils literal notranslate"><span class="pre">LiveFeatureBuilder.build()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.features.live.LiveFeatureBuilder.operational_metrics"><code class="docutils literal notranslate"><span class="pre">LiveFeatureBuilder.operational_metrics()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-backend.inference.client">ML client</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#backend.inference.client.MLServiceClient"><code class="docutils literal notranslate"><span class="pre">MLServiceClient</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.inference.client.MLServiceClient.close"><code class="docutils literal notranslate"><span class="pre">MLServiceClient.close()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.inference.client.MLServiceClient.health"><code class="docutils literal notranslate"><span class="pre">MLServiceClient.health()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.inference.client.MLServiceClient.predict"><code class="docutils literal notranslate"><span class="pre">MLServiceClient.predict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-backend.prediction.engine">Prediction engine</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#backend.prediction.engine.PredictionEngine"><code class="docutils literal notranslate"><span class="pre">PredictionEngine</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.prediction.engine.PredictionEngine.running"><code class="docutils literal notranslate"><span class="pre">PredictionEngine.running</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.prediction.engine.PredictionEngine.start"><code class="docutils literal notranslate"><span class="pre">PredictionEngine.start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.prediction.engine.PredictionEngine.stop"><code class="docutils literal notranslate"><span class="pre">PredictionEngine.stop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.prediction.engine.PredictionEngine.metrics"><code class="docutils literal notranslate"><span class="pre">PredictionEngine.metrics()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-backend.prediction.store">Prediction store</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#backend.prediction.store.PredictionStore"><code class="docutils literal notranslate"><span class="pre">PredictionStore</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backend.prediction.store.PredictionStore.set"><code class="docutils literal notranslate"><span class="pre">PredictionStore.set()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.prediction.store.PredictionStore.get"><code class="docutils literal notranslate"><span class="pre">PredictionStore.get()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.prediction.store.PredictionStore.all"><code class="docutils literal notranslate"><span class="pre">PredictionStore.all()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.prediction.store.PredictionStore.get_trail"><code class="docutils literal notranslate"><span class="pre">PredictionStore.get_trail()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend.prediction.store.PredictionStore.all_trails"><code class="docutils literal notranslate"><span class="pre">PredictionStore.all_trails()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-backend.prediction.rules">Prediction rules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#backend.prediction.rules.classify_risk"><code class="docutils literal notranslate"><span class="pre">classify_risk()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.prediction.rules.deviation_direction"><code class="docutils literal notranslate"><span class="pre">deviation_direction()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend.prediction.rules.explain_prediction"><code class="docutils literal notranslate"><span class="pre">explain_prediction()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ml_service.html">ML Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API и Swagger</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Меню навигации для мобильных устройств" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">MosTrans — предиктор изменений графика</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Навигация по страницам">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Backend</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/backend.rst.txt" rel="nofollow"> Просмотреть исходный код страницы</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="backend">
+<h1>Backend<a class="headerlink" href="#backend" title="Ссылка на этот заголовок"></a></h1>
+<section id="module-backend.ndtp.parser">
+<span id="ndtp-parser"></span><h2>NDTP parser<a class="headerlink" href="#module-backend.ndtp.parser" title="Ссылка на этот заголовок"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.ndtp.parser.NDTPHeader">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.ndtp.parser.</span></span><span class="sig-name descname"><span class="pre">NDTPHeader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peer_address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">packet_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/ndtp/parser.html#NDTPHeader"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.ndtp.parser.NDTPHeader" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Основные поля заголовков NDTP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>peer_address</strong> (<em>int</em>)</p></li>
+<li><p><strong>service_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>packet_type</strong> (<em>int</em>)</p></li>
+<li><p><strong>request_id</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.NDTPHeader.peer_address">
+<span class="sig-name descname"><span class="pre">peer_address</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#backend.ndtp.parser.NDTPHeader.peer_address" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.NDTPHeader.service_id">
+<span class="sig-name descname"><span class="pre">service_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#backend.ndtp.parser.NDTPHeader.service_id" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.NDTPHeader.packet_type">
+<span class="sig-name descname"><span class="pre">packet_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#backend.ndtp.parser.NDTPHeader.packet_type" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.NDTPHeader.request_id">
+<span class="sig-name descname"><span class="pre">request_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#backend.ndtp.parser.NDTPHeader.request_id" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.ndtp.parser.TelemetryEvent">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.ndtp.parser.</span></span><span class="sig-name descname"><span class="pre">TelemetryEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heading</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location_valid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_event_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/ndtp/parser.html#TelemetryEvent"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.ndtp.parser.TelemetryEvent" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Нормализованное событие навигационной телеметрии.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>unit_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>event_time</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>lon</strong> (<em>float</em>)</p></li>
+<li><p><strong>lat</strong> (<em>float</em>)</p></li>
+<li><p><strong>alt</strong> (<em>float</em>)</p></li>
+<li><p><strong>speed</strong> (<em>float</em>)</p></li>
+<li><p><strong>heading</strong> (<em>float</em>)</p></li>
+<li><p><strong>location_valid</strong> (<em>bool</em>)</p></li>
+<li><p><strong>source_event_time</strong> (<em>datetime</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.TelemetryEvent.unit_id">
+<span class="sig-name descname"><span class="pre">unit_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#backend.ndtp.parser.TelemetryEvent.unit_id" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.TelemetryEvent.event_time">
+<span class="sig-name descname"><span class="pre">event_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span></em><a class="headerlink" href="#backend.ndtp.parser.TelemetryEvent.event_time" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.TelemetryEvent.lon">
+<span class="sig-name descname"><span class="pre">lon</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#backend.ndtp.parser.TelemetryEvent.lon" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.TelemetryEvent.lat">
+<span class="sig-name descname"><span class="pre">lat</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#backend.ndtp.parser.TelemetryEvent.lat" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.TelemetryEvent.alt">
+<span class="sig-name descname"><span class="pre">alt</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#backend.ndtp.parser.TelemetryEvent.alt" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.TelemetryEvent.speed">
+<span class="sig-name descname"><span class="pre">speed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#backend.ndtp.parser.TelemetryEvent.speed" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.TelemetryEvent.heading">
+<span class="sig-name descname"><span class="pre">heading</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#backend.ndtp.parser.TelemetryEvent.heading" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.TelemetryEvent.location_valid">
+<span class="sig-name descname"><span class="pre">location_valid</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#backend.ndtp.parser.TelemetryEvent.location_valid" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.ndtp.parser.TelemetryEvent.source_event_time">
+<span class="sig-name descname"><span class="pre">source_event_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#backend.ndtp.parser.TelemetryEvent.source_event_time" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.ndtp.parser.get_frame_size">
+<span class="sig-prename descclassname"><span class="pre">backend.ndtp.parser.</span></span><span class="sig-name descname"><span class="pre">get_frame_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">buffer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/ndtp/parser.html#get_frame_size"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.ndtp.parser.get_frame_size" title="Ссылка на это определение"></a></dt>
+<dd><p>Получить полный размер NDTP-кадра из NPL-заголовка.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>buffer</strong> (<em>bytes</em><em> | </em><em>bytearray</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>int | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.ndtp.parser.parse_headers">
+<span class="sig-prename descclassname"><span class="pre">backend.ndtp.parser.</span></span><span class="sig-name descname"><span class="pre">parse_headers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frame</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/ndtp/parser.html#parse_headers"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.ndtp.parser.parse_headers" title="Ссылка на это определение"></a></dt>
+<dd><p>Распарсить NPL и NPH заголовки.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>frame</strong> (<em>bytes</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#backend.ndtp.parser.NDTPHeader" title="backend.ndtp.parser.NDTPHeader"><em>NDTPHeader</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.ndtp.parser.parse_nav00">
+<span class="sig-prename descclassname"><span class="pre">backend.ndtp.parser.</span></span><span class="sig-name descname"><span class="pre">parse_nav00</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/ndtp/parser.html#parse_nav00"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.ndtp.parser.parse_nav00" title="Ссылка на это определение"></a></dt>
+<dd><p>Распарсить payload ячейки G6CellNav00.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>payload</strong> (<em>bytes</em>)</p></li>
+<li><p><strong>unit_id</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent" title="backend.ndtp.parser.TelemetryEvent"><em>TelemetryEvent</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.ndtp.parser.parse_realtime">
+<span class="sig-prename descclassname"><span class="pre">backend.ndtp.parser.</span></span><span class="sig-name descname"><span class="pre">parse_realtime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/ndtp/parser.html#parse_realtime"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.ndtp.parser.parse_realtime" title="Ссылка на это определение"></a></dt>
+<dd><p>Извлечь Nav00 из realtime-пакета.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>frame</strong> (<em>bytes</em>)</p></li>
+<li><p><strong>header</strong> (<a class="reference internal" href="#backend.ndtp.parser.NDTPHeader" title="backend.ndtp.parser.NDTPHeader"><em>NDTPHeader</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent" title="backend.ndtp.parser.TelemetryEvent"><em>TelemetryEvent</em></a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.ndtp.parser.parse_frame">
+<span class="sig-prename descclassname"><span class="pre">backend.ndtp.parser.</span></span><span class="sig-name descname"><span class="pre">parse_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frame</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/ndtp/parser.html#parse_frame"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.ndtp.parser.parse_frame" title="Ссылка на это определение"></a></dt>
+<dd><p>Распарсить один NDTP-кадр.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>frame</strong> (<em>bytes</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[<a class="reference internal" href="#backend.ndtp.parser.NDTPHeader" title="backend.ndtp.parser.NDTPHeader"><em>NDTPHeader</em></a>, <a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent" title="backend.ndtp.parser.TelemetryEvent"><em>TelemetryEvent</em></a> | None]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-backend.ndtp.receiver">
+<span id="ndtp-receiver"></span><h2>NDTP receiver<a class="headerlink" href="#module-backend.ndtp.receiver" title="Ссылка на этот заголовок"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.ndtp.receiver.NDTPReceiver">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.ndtp.receiver.</span></span><span class="sig-name descname"><span class="pre">NDTPReceiver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_telemetry</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/ndtp/receiver.html#NDTPReceiver"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.ndtp.receiver.NDTPReceiver" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>TCP-сервер для приёма потока NDTP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>host</strong> (<em>str</em>)</p></li>
+<li><p><strong>port</strong> (<em>int</em>)</p></li>
+<li><p><strong>on_telemetry</strong> (<em>Callable</em><em>[</em><em>[</em><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent" title="backend.ndtp.parser.TelemetryEvent"><em>TelemetryEvent</em></a><em>]</em><em>, </em><em>None</em><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="backend.ndtp.receiver.NDTPReceiver.running">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">running</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#backend.ndtp.receiver.NDTPReceiver.running" title="Ссылка на это определение"></a></dt>
+<dd><p>Запущен ли TCP-сервер NDTP.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.ndtp.receiver.NDTPReceiver.start">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/ndtp/receiver.html#NDTPReceiver.start"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.ndtp.receiver.NDTPReceiver.start" title="Ссылка на это определение"></a></dt>
+<dd><p>Запустить TCP-сервер.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.ndtp.receiver.NDTPReceiver.stop">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/ndtp/receiver.html#NDTPReceiver.stop"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.ndtp.receiver.NDTPReceiver.stop" title="Ссылка на это определение"></a></dt>
+<dd><p>Остановить TCP-сервер.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-backend.telemetry.state">
+<span id="telemetry-state"></span><h2>Telemetry state<a class="headerlink" href="#module-backend.telemetry.state" title="Ссылка на этот заголовок"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.telemetry.state.TelemetryStore">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.telemetry.state.</span></span><span class="sig-name descname"><span class="pre">TelemetryStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">retention_minutes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/telemetry/state.html#TelemetryStore"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.telemetry.state.TelemetryStore" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>In-memory история NDTP-телеметрии по unit_id.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>retention_minutes</strong> (<em>int</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.telemetry.state.TelemetryStore.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/telemetry/state.html#TelemetryStore.add"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.telemetry.state.TelemetryStore.add" title="Ссылка на это определение"></a></dt>
+<dd><p>Добавить событие и удалить устаревшую live-историю.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event</strong> (<a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent" title="backend.ndtp.parser.TelemetryEvent"><em>TelemetryEvent</em></a>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.telemetry.state.TelemetryStore.get_history">
+<span class="sig-name descname"><span class="pre">get_history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/telemetry/state.html#TelemetryStore.get_history"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.telemetry.state.TelemetryStore.get_history" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>unit_id</strong> (<em>int</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[<a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent" title="backend.ndtp.parser.TelemetryEvent"><em>TelemetryEvent</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.telemetry.state.TelemetryStore.get_history_since">
+<span class="sig-name descname"><span class="pre">get_history_since</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">since</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/telemetry/state.html#TelemetryStore.get_history_since"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.telemetry.state.TelemetryStore.get_history_since" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>unit_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>since</strong> (<em>datetime</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[<a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent" title="backend.ndtp.parser.TelemetryEvent"><em>TelemetryEvent</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.telemetry.state.TelemetryStore.get_latest">
+<span class="sig-name descname"><span class="pre">get_latest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/telemetry/state.html#TelemetryStore.get_latest"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.telemetry.state.TelemetryStore.get_latest" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>unit_id</strong> (<em>int</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent" title="backend.ndtp.parser.TelemetryEvent"><em>TelemetryEvent</em></a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.telemetry.state.TelemetryStore.get_vehicle_ids">
+<span class="sig-name descname"><span class="pre">get_vehicle_ids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/telemetry/state.html#TelemetryStore.get_vehicle_ids"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.telemetry.state.TelemetryStore.get_vehicle_ids" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.telemetry.state.TelemetryStore.get_telemetry_age_s">
+<span class="sig-name descname"><span class="pre">get_telemetry_age_s</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/telemetry/state.html#TelemetryStore.get_telemetry_age_s"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.telemetry.state.TelemetryStore.get_telemetry_age_s" title="Ссылка на это определение"></a></dt>
+<dd><p>Возраст телеметрии по времени фактического приёма NDTP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>unit_id</strong> (<em>int</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>float | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.telemetry.state.TelemetryStore.get_vehicle_summaries">
+<span class="sig-name descname"><span class="pre">get_vehicle_summaries</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/telemetry/state.html#TelemetryStore.get_vehicle_summaries"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.telemetry.state.TelemetryStore.get_vehicle_summaries" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-backend.transport.registry">
+<span id="vehicle-registry"></span><h2>Vehicle registry<a class="headerlink" href="#module-backend.transport.registry" title="Ссылка на этот заголовок"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.transport.registry.VehicleRegistry">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.transport.registry.</span></span><span class="sig-name descname"><span class="pre">VehicleRegistry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traffic_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/transport/registry.html#VehicleRegistry"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.transport.registry.VehicleRegistry" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Опциональное соответствие unit_id → tr_id из предоставленного датасета.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>traffic_path</strong> (<em>Path</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.transport.registry.VehicleRegistry.get_tr_id">
+<span class="sig-name descname"><span class="pre">get_tr_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/transport/registry.html#VehicleRegistry.get_tr_id"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.transport.registry.VehicleRegistry.get_tr_id" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>unit_id</strong> (<em>int</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>int | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-backend.schedule.service">
+<span id="schedule-service"></span><h2>Schedule service<a class="headerlink" href="#module-backend.schedule.service" title="Ссылка на этот заголовок"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.schedule.service.StopCandidate">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.schedule.service.</span></span><span class="sig-name descname"><span class="pre">StopCandidate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stop_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">planned_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">geom</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">address</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#StopCandidate"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.StopCandidate" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Плановая остановка на конкретную календарную дату.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stop_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>planned_time</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>geom</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>address</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.StopCandidate.stop_id">
+<span class="sig-name descname"><span class="pre">stop_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#backend.schedule.service.StopCandidate.stop_id" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.StopCandidate.planned_time">
+<span class="sig-name descname"><span class="pre">planned_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span></em><a class="headerlink" href="#backend.schedule.service.StopCandidate.planned_time" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.StopCandidate.geom">
+<span class="sig-name descname"><span class="pre">geom</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#backend.schedule.service.StopCandidate.geom" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.StopCandidate.address">
+<span class="sig-name descname"><span class="pre">address</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#backend.schedule.service.StopCandidate.address" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.schedule.service.TargetWindow">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.schedule.service.</span></span><span class="sig-name descname"><span class="pre">TargetWindow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tr_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">planned_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidates</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#TargetWindow"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.TargetWindow" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Плановая остановка внутри обязательного окна T+10..15 минут.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tr_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>planned_time</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>horizon_min</strong> (<em>float</em>)</p></li>
+<li><p><strong>candidates</strong> (<em>list</em><em>[</em><a class="reference internal" href="#backend.schedule.service.StopCandidate" title="backend.schedule.service.StopCandidate"><em>StopCandidate</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.TargetWindow.tr_id">
+<span class="sig-name descname"><span class="pre">tr_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#backend.schedule.service.TargetWindow.tr_id" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.TargetWindow.planned_time">
+<span class="sig-name descname"><span class="pre">planned_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span></em><a class="headerlink" href="#backend.schedule.service.TargetWindow.planned_time" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.TargetWindow.horizon_min">
+<span class="sig-name descname"><span class="pre">horizon_min</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#backend.schedule.service.TargetWindow.horizon_min" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.TargetWindow.candidates">
+<span class="sig-name descname"><span class="pre">candidates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#backend.schedule.service.StopCandidate" title="backend.schedule.service.StopCandidate"><span class="pre">StopCandidate</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#backend.schedule.service.TargetWindow.candidates" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.schedule.service.NextStopWindow">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.schedule.service.</span></span><span class="sig-name descname"><span class="pre">NextStopWindow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tr_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">planned_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schedule_position_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidates</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#NextStopWindow"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.NextStopWindow" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Следующая остановка относительно текущего положения ТС в графике.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tr_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>planned_time</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>schedule_position_time</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>candidates</strong> (<em>list</em><em>[</em><a class="reference internal" href="#backend.schedule.service.StopCandidate" title="backend.schedule.service.StopCandidate"><em>StopCandidate</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.NextStopWindow.tr_id">
+<span class="sig-name descname"><span class="pre">tr_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#backend.schedule.service.NextStopWindow.tr_id" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.NextStopWindow.planned_time">
+<span class="sig-name descname"><span class="pre">planned_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span></em><a class="headerlink" href="#backend.schedule.service.NextStopWindow.planned_time" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.NextStopWindow.schedule_position_time">
+<span class="sig-name descname"><span class="pre">schedule_position_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span></em><a class="headerlink" href="#backend.schedule.service.NextStopWindow.schedule_position_time" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.NextStopWindow.candidates">
+<span class="sig-name descname"><span class="pre">candidates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#backend.schedule.service.StopCandidate" title="backend.schedule.service.StopCandidate"><span class="pre">StopCandidate</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#backend.schedule.service.NextStopWindow.candidates" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.schedule.service.NearestRouteStop">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.schedule.service.</span></span><span class="sig-name descname"><span class="pre">NearestRouteStop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stop</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_m</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#NearestRouteStop"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.NearestRouteStop" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Ближайшая по GPS остановка, принадлежащая расписанию конкретного ТС.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stop</strong> (<a class="reference internal" href="#backend.schedule.service.StopCandidate" title="backend.schedule.service.StopCandidate"><em>StopCandidate</em></a>)</p></li>
+<li><p><strong>distance_m</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.NearestRouteStop.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#backend.schedule.service.StopCandidate" title="backend.schedule.service.StopCandidate"><span class="pre">StopCandidate</span></a></em><a class="headerlink" href="#backend.schedule.service.NearestRouteStop.stop" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="backend.schedule.service.NearestRouteStop.distance_m">
+<span class="sig-name descname"><span class="pre">distance_m</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#backend.schedule.service.NearestRouteStop.distance_m" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.schedule.service.ScheduleService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.schedule.service.</span></span><span class="sig-name descname"><span class="pre">ScheduleService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#ScheduleService"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.ScheduleService" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Суточное расписание, повторяющееся каждый календарный день.</p>
+<p><code class="docutils literal notranslate"><span class="pre">schedule_plan.csv</span></code> хранит эталонный день. Для live-потока используется
+время суток исходной строки, а дата берётся из текущего NDTP-времени.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>schedule_path</strong> (<em>Path</em>)</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="backend.schedule.service.ScheduleService.enabled">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">enabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#backend.schedule.service.ScheduleService.enabled" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.schedule.service.ScheduleService.find_stop">
+<span class="sig-name descname"><span class="pre">find_stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tr_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">planned_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#ScheduleService.find_stop"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.ScheduleService.find_stop" title="Ссылка на это определение"></a></dt>
+<dd><p>Найти остановку, применив её время суток к нужному дню.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tr_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>stop_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>planned_time</strong> (<em>datetime</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#backend.schedule.service.StopCandidate" title="backend.schedule.service.StopCandidate"><em>StopCandidate</em></a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.schedule.service.ScheduleService.find_target_window">
+<span class="sig-name descname"><span class="pre">find_target_window</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tr_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#ScheduleService.find_target_window"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.ScheduleService.find_target_window" title="Ссылка на это определение"></a></dt>
+<dd><p>Найти первое плановое событие в (T+10, T+15].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tr_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>prediction_time</strong> (<em>datetime</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#backend.schedule.service.TargetWindow" title="backend.schedule.service.TargetWindow"><em>TargetWindow</em></a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.schedule.service.ScheduleService.find_target_near_horizon">
+<span class="sig-name descname"><span class="pre">find_target_near_horizon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tr_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon_min</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#ScheduleService.find_target_near_horizon"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.ScheduleService.find_target_near_horizon" title="Ссылка на это определение"></a></dt>
+<dd><p>Найти остановку внутри (T+10, T+15], ближайшую к T+horizon.</p>
+<p>Runtime использует фиксированный ML-горизонт 12.5 минуты. Если в
+расписании нет остановки ровно через 12.5 минуты, выбирается ближайшая
+плановая остановка внутри обязательного окна 10–15 минут.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tr_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>prediction_time</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>horizon_min</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#backend.schedule.service.TargetWindow" title="backend.schedule.service.TargetWindow"><em>TargetWindow</em></a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.schedule.service.ScheduleService.service_status">
+<span class="sig-name descname"><span class="pre">service_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tr_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#ScheduleService.service_status"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.ScheduleService.service_status" title="Ссылка на это определение"></a></dt>
+<dd><p>Определить, идёт ли ТС сейчас по суточному расписанию.</p>
+<p>Статус считается только по текущему календарному дню. Мы намеренно
+не считаем первую остановку следующего дня «следующей» для уже
+завершившего работу ТС. Это особенно важно для live-эмулятора,
+который может продолжать присылать координаты после конца графика.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tr_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>current_time</strong> (<em>datetime</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.schedule.service.ScheduleService.find_next_stop_window">
+<span class="sig-name descname"><span class="pre">find_next_stop_window</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tr_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_deviation_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#ScheduleService.find_next_stop_window"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.ScheduleService.find_next_stop_window" title="Ссылка на это определение"></a></dt>
+<dd><p>Найти следующую остановку по текущему положению ТС в расписании.</p>
+<p>Если известно текущее отклонение, сначала восстанавливаем условное
+положение ТС на временной оси расписания: <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">-</span> <span class="pre">cur_dev_s</span></code>.
+Поэтому для опаздывающего автобуса следующей может оставаться остановка,
+чьё плановое время уже немного прошло по настенным часам.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tr_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>current_time</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>current_deviation_s</strong> (<em>float</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#backend.schedule.service.NextStopWindow" title="backend.schedule.service.NextStopWindow"><em>NextStopWindow</em></a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.schedule.service.ScheduleService.find_nearest_route_stop">
+<span class="sig-name descname"><span class="pre">find_nearest_route_stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tr_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#ScheduleService.find_nearest_route_stop"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.ScheduleService.find_nearest_route_stop" title="Ссылка на это определение"></a></dt>
+<dd><p>Найти ближайшую по GPS остановку, принадлежащую этому <code class="docutils literal notranslate"><span class="pre">tr_id</span></code>.</p>
+<p>Это fallback для realtime-режима. Он нужен, когда временное
+сопоставление с расписанием не смогло определить следующую остановку.
+Остановки других ТС никогда не рассматриваются. Если одна и та же
+географическая точка встречается в расписании несколько раз, берётся
+ближайшее будущее плановое прохождение этой точки.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tr_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>current_time</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>lon</strong> (<em>float</em>)</p></li>
+<li><p><strong>lat</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#backend.schedule.service.NearestRouteStop" title="backend.schedule.service.NearestRouteStop"><em>NearestRouteStop</em></a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.schedule.service.ScheduleService.route_for_day">
+<span class="sig-name descname"><span class="pre">route_for_day</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tr_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">day</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#ScheduleService.route_for_day"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.ScheduleService.route_for_day" title="Ссылка на это определение"></a></dt>
+<dd><p>Получить суточный маршрут, разделённый на рейсы по длинным паузам.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tr_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>day</strong> (<em>date</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.schedule.service.ScheduleService.estimate_current_deviation">
+<span class="sig-name descname"><span class="pre">estimate_current_deviation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tr_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">search_minutes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_distance_m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/schedule/service.html#ScheduleService.estimate_current_deviation"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.schedule.service.ScheduleService.estimate_current_deviation" title="Ссылка на это определение"></a></dt>
+<dd><p>Оценить текущее отклонение по ближайшей плановой остановке.</p>
+<p>Возвращается знаковое отклонение: <code class="docutils literal notranslate"><span class="pre">+</span></code> означает опоздание, <code class="docutils literal notranslate"><span class="pre">-</span></code> —
+опережение. Значение считается только когда live GPS действительно
+находится рядом с плановой остановкой около текущего времени.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tr_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>current_time</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>lon</strong> (<em>float</em>)</p></li>
+<li><p><strong>lat</strong> (<em>float</em>)</p></li>
+<li><p><strong>search_minutes</strong> (<em>int</em>)</p></li>
+<li><p><strong>max_distance_m</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>float | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-backend.features.live">
+<span id="online-features"></span><h2>Online features<a class="headerlink" href="#module-backend.features.live" title="Ссылка на этот заголовок"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.features.live.normalize_datetime">
+<span class="sig-prename descclassname"><span class="pre">backend.features.live.</span></span><span class="sig-name descname"><span class="pre">normalize_datetime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/features/live.html#normalize_datetime"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.features.live.normalize_datetime" title="Ссылка на это определение"></a></dt>
+<dd><p>Привести datetime к UTC без timezone для совместимой арифметики.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>datetime</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>datetime</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.features.live.parse_point">
+<span class="sig-prename descclassname"><span class="pre">backend.features.live.</span></span><span class="sig-name descname"><span class="pre">parse_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/features/live.html#parse_point"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.features.live.parse_point" title="Ссылка на это определение"></a></dt>
+<dd><p>Разобрать WKT POINT в lon, lat.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>str</em><em> | </em><em>None</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[float, float] | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.features.live.haversine_m">
+<span class="sig-prename descclassname"><span class="pre">backend.features.live.</span></span><span class="sig-name descname"><span class="pre">haversine_m</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lon1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/features/live.html#haversine_m"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.features.live.haversine_m" title="Ссылка на это определение"></a></dt>
+<dd><p>Расстояние между двумя GPS-точками в метрах.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lon1</strong> (<em>float</em>)</p></li>
+<li><p><strong>lat1</strong> (<em>float</em>)</p></li>
+<li><p><strong>lon2</strong> (<em>float</em>)</p></li>
+<li><p><strong>lat2</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.features.live.calculate_dwell_time_s">
+<span class="sig-prename descclassname"><span class="pre">backend.features.live.</span></span><span class="sig-name descname"><span class="pre">calculate_dwell_time_s</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">history</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_minutes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/features/live.html#calculate_dwell_time_s"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.features.live.calculate_dwell_time_s" title="Ссылка на это определение"></a></dt>
+<dd><p>Оценить время простоя по соседним валидным NDTP-наблюдениям.</p>
+<p>Для каждого интервала между соседними GPS-пакетами учитывается время,
+если скорость в начале интервала была не выше 1 км/ч. Интервалы
+обрезаются границами последних <code class="docutils literal notranslate"><span class="pre">window_minutes</span></code> минут. Будущие пакеты
+относительно <code class="docutils literal notranslate"><span class="pre">prediction_time</span></code> не используются.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>history</strong> (<em>list</em><em>[</em><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent" title="backend.ndtp.parser.TelemetryEvent"><em>TelemetryEvent</em></a><em>]</em>)</p></li>
+<li><p><strong>prediction_time</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>window_minutes</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.features.live.LiveFeatureBuilder">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.features.live.</span></span><span class="sig-name descname"><span class="pre">LiveFeatureBuilder</span></span><a class="reference internal" href="_modules/backend/features/live.html#LiveFeatureBuilder"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.features.live.LiveFeatureBuilder" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Построение тех же 10 признаков CatBoost из live NDTP-состояния.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.features.live.LiveFeatureBuilder.build">
+<span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">history</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizon_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cur_dev_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_geom</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/features/live.html#LiveFeatureBuilder.build"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.features.live.LiveFeatureBuilder.build" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>history</strong> (<em>list</em><em>[</em><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent" title="backend.ndtp.parser.TelemetryEvent"><em>TelemetryEvent</em></a><em>]</em>)</p></li>
+<li><p><strong>prediction_time</strong> (<em>datetime</em>)</p></li>
+<li><p><strong>horizon_min</strong> (<em>float</em>)</p></li>
+<li><p><strong>cur_dev_s</strong> (<em>float</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>target_geom</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, float | None]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.features.live.LiveFeatureBuilder.operational_metrics">
+<span class="sig-name descname"><span class="pre">operational_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">history</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_time</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/features/live.html#LiveFeatureBuilder.operational_metrics"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.features.live.LiveFeatureBuilder.operational_metrics" title="Ссылка на это определение"></a></dt>
+<dd><p>Рассчитать показатели Backend, не меняя набор ML-признаков.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>history</strong> (<em>list</em><em>[</em><a class="reference internal" href="#backend.ndtp.parser.TelemetryEvent" title="backend.ndtp.parser.TelemetryEvent"><em>TelemetryEvent</em></a><em>]</em>)</p></li>
+<li><p><strong>prediction_time</strong> (<em>datetime</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, float | None]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-backend.inference.client">
+<span id="ml-client"></span><h2>ML client<a class="headerlink" href="#module-backend.inference.client" title="Ссылка на этот заголовок"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.inference.client.MLServiceClient">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.inference.client.</span></span><span class="sig-name descname"><span class="pre">MLServiceClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/inference/client.html#MLServiceClient"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.inference.client.MLServiceClient" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Асинхронный клиент отдельного ML-сервиса.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_url</strong> (<em>str</em>)</p></li>
+<li><p><strong>timeout_s</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.inference.client.MLServiceClient.close">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/inference/client.html#MLServiceClient.close"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.inference.client.MLServiceClient.close" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.inference.client.MLServiceClient.health">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">health</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/inference/client.html#MLServiceClient.health"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.inference.client.MLServiceClient.health" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.inference.client.MLServiceClient.predict">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/inference/client.html#MLServiceClient.predict"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.inference.client.MLServiceClient.predict" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>features</strong> (<em>dict</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-backend.prediction.engine">
+<span id="prediction-engine"></span><h2>Prediction engine<a class="headerlink" href="#module-backend.prediction.engine" title="Ссылка на этот заголовок"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.prediction.engine.PredictionEngine">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.prediction.engine.</span></span><span class="sig-name descname"><span class="pre">PredictionEngine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">telemetry_store</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schedule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_builder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ml_client</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_store</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stale_after_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_horizon_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_horizon_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_horizon_min</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/engine.html#PredictionEngine"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.engine.PredictionEngine" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Автоматический online-инференс для активных NDTP-устройств.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>telemetry_store</strong> (<a class="reference internal" href="#backend.telemetry.state.TelemetryStore" title="backend.telemetry.state.TelemetryStore"><em>TelemetryStore</em></a>)</p></li>
+<li><p><strong>registry</strong> (<a class="reference internal" href="#backend.transport.registry.VehicleRegistry" title="backend.transport.registry.VehicleRegistry"><em>VehicleRegistry</em></a>)</p></li>
+<li><p><strong>schedule</strong> (<a class="reference internal" href="#backend.schedule.service.ScheduleService" title="backend.schedule.service.ScheduleService"><em>ScheduleService</em></a>)</p></li>
+<li><p><strong>feature_builder</strong> (<a class="reference internal" href="#backend.features.live.LiveFeatureBuilder" title="backend.features.live.LiveFeatureBuilder"><em>LiveFeatureBuilder</em></a>)</p></li>
+<li><p><strong>ml_client</strong> (<a class="reference internal" href="#backend.inference.client.MLServiceClient" title="backend.inference.client.MLServiceClient"><em>MLServiceClient</em></a>)</p></li>
+<li><p><strong>prediction_store</strong> (<a class="reference internal" href="#backend.prediction.store.PredictionStore" title="backend.prediction.store.PredictionStore"><em>PredictionStore</em></a>)</p></li>
+<li><p><strong>interval_s</strong> (<em>float</em>)</p></li>
+<li><p><strong>stale_after_s</strong> (<em>float</em>)</p></li>
+<li><p><strong>default_horizon_min</strong> (<em>float</em>)</p></li>
+<li><p><strong>min_horizon_min</strong> (<em>float</em>)</p></li>
+<li><p><strong>max_horizon_min</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="backend.prediction.engine.PredictionEngine.running">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">running</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#backend.prediction.engine.PredictionEngine.running" title="Ссылка на это определение"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.prediction.engine.PredictionEngine.start">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/engine.html#PredictionEngine.start"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.engine.PredictionEngine.start" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.prediction.engine.PredictionEngine.stop">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/engine.html#PredictionEngine.stop"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.engine.PredictionEngine.stop" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.prediction.engine.PredictionEngine.metrics">
+<span class="sig-name descname"><span class="pre">metrics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/engine.html#PredictionEngine.metrics"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.engine.PredictionEngine.metrics" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-backend.prediction.store">
+<span id="prediction-store"></span><h2>Prediction store<a class="headerlink" href="#module-backend.prediction.store" title="Ссылка на этот заголовок"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="backend.prediction.store.PredictionStore">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backend.prediction.store.</span></span><span class="sig-name descname"><span class="pre">PredictionStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trail_history_limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/store.html#PredictionStore"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.store.PredictionStore" title="Ссылка на это определение"></a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Последний прогноз и история движения/риска по каждому unit_id.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>trail_history_limit</strong> (<em>int</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.prediction.store.PredictionStore.set">
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/store.html#PredictionStore.set"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.store.PredictionStore.set" title="Ссылка на это определение"></a></dt>
+<dd><p>Сохранить последнее состояние и новую точку цветной траектории.</p>
+<p>Точка добавляется только для нового prediction_time. Поэтому повторное
+сохранение того же прогноза при stale/degraded не дублирует маршрут.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>unit_id</strong> (<em>int</em>)</p></li>
+<li><p><strong>prediction</strong> (<em>dict</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.prediction.store.PredictionStore.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/store.html#PredictionStore.get"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.store.PredictionStore.get" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>unit_id</strong> (<em>int</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.prediction.store.PredictionStore.all">
+<span class="sig-name descname"><span class="pre">all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/store.html#PredictionStore.all"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.store.PredictionStore.all" title="Ссылка на это определение"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.prediction.store.PredictionStore.get_trail">
+<span class="sig-name descname"><span class="pre">get_trail</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/store.html#PredictionStore.get_trail"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.store.PredictionStore.get_trail" title="Ссылка на это определение"></a></dt>
+<dd><p>Получить накопленную траекторию ТС за текущую сессию Backend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>unit_id</strong> (<em>int</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backend.prediction.store.PredictionStore.all_trails">
+<span class="sig-name descname"><span class="pre">all_trails</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/store.html#PredictionStore.all_trails"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.store.PredictionStore.all_trails" title="Ссылка на это определение"></a></dt>
+<dd><p>Получить цветную историю движения всех ТС.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-backend.prediction.rules">
+<span id="prediction-rules"></span><h2>Prediction rules<a class="headerlink" href="#module-backend.prediction.rules" title="Ссылка на этот заголовок"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.prediction.rules.classify_risk">
+<span class="sig-prename descclassname"><span class="pre">backend.prediction.rules.</span></span><span class="sig-name descname"><span class="pre">classify_risk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deviation_s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/rules.html#classify_risk"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.rules.classify_risk" title="Ссылка на это определение"></a></dt>
+<dd><p>Преобразовать модуль отклонения от графика в уровень риска.</p>
+<p>Положительное значение означает опоздание, отрицательное — опережение.
+Оба направления считаются нарушением графика, поэтому риск определяется
+по абсолютной величине отклонения.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>deviation_s</strong> (<em>float</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.prediction.rules.deviation_direction">
+<span class="sig-prename descclassname"><span class="pre">backend.prediction.rules.</span></span><span class="sig-name descname"><span class="pre">deviation_direction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deviation_s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/rules.html#deviation_direction"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.rules.deviation_direction" title="Ссылка на это определение"></a></dt>
+<dd><p>Получить направление отклонения от расписания.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>deviation_s</strong> (<em>float</em>)</p>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="backend.prediction.rules.explain_prediction">
+<span class="sig-prename descclassname"><span class="pre">backend.prediction.rules.</span></span><span class="sig-name descname"><span class="pre">explain_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deviation_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/backend/prediction/rules.html#explain_prediction"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#backend.prediction.rules.explain_prediction" title="Ссылка на это определение"></a></dt>
+<dd><p>Получить объяснимую причину и рекомендацию без отдельной ML-модели.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>deviation_s</strong> (<em>float</em>)</p></li>
+<li><p><strong>features</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>float</em><em> | </em><em>None</em><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Нижняя область">
+        <a href="architecture.html" class="btn btn-neutral float-left" title="Архитектура" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Предыдущая</a>
+        <a href="ml_service.html" class="btn btn-neutral float-right" title="ML Service" accesskey="n" rel="next">Следующая <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Авторские права . </p>
+  </div>
+
+  Собрано при помощи <a href="https://www.sphinx-doc.org/">Sphinx</a> с использованием
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">темы,</a>
+    предоставленной <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

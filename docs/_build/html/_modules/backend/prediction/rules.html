@@ -1,0 +1,223 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="ru" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>backend.prediction.rules &mdash; MosTrans · Документация кода</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=9ca2116e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/translations.js?v=cd1d70c9"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Алфавитный указатель" href="../../../genindex.html" />
+    <link rel="search" title="Поиск" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            MosTrans — предиктор изменений графика
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Поиск в документации" aria-label="Поиск в документации" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Меню навигации">
+              <p class="caption" role="heading"><span class="caption-text">Содержание</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Архитектура</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../backend.html">Backend</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ml_service.html">ML Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API и Swagger</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Меню навигации для мобильных устройств" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">MosTrans — предиктор изменений графика</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Навигация по страницам">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Код модуля</a></li>
+      <li class="breadcrumb-item active">backend.prediction.rules</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Исходный код backend.prediction.rules</h1><div class="highlight"><pre>
+<div class="viewcode-block" id="classify_risk">
+<a class="viewcode-back" href="../../../backend.html#backend.prediction.rules.classify_risk">[документация]</a>
+<span></span><span class="k">def</span><span class="w"> </span><span class="nf">classify_risk</span><span class="p">(</span><span class="n">deviation_s</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Преобразовать модуль отклонения от графика в уровень риска.</span>
+
+<span class="sd">    Положительное значение означает опоздание, отрицательное — опережение.</span>
+<span class="sd">    Оба направления считаются нарушением графика, поэтому риск определяется</span>
+<span class="sd">    по абсолютной величине отклонения.</span>
+<span class="sd">    """</span>
+
+    <span class="n">absolute_deviation_s</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">deviation_s</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">absolute_deviation_s</span> <span class="o">&gt;</span> <span class="mi">120</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"red"</span>
+    <span class="k">if</span> <span class="n">absolute_deviation_s</span> <span class="o">&gt;</span> <span class="mi">60</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"yellow"</span>
+    <span class="k">return</span> <span class="s2">"green"</span></div>
+
+
+
+<div class="viewcode-block" id="deviation_direction">
+<a class="viewcode-back" href="../../../backend.html#backend.prediction.rules.deviation_direction">[документация]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">deviation_direction</span><span class="p">(</span><span class="n">deviation_s</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Получить направление отклонения от расписания."""</span>
+
+    <span class="k">if</span> <span class="n">deviation_s</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"late"</span>
+    <span class="k">if</span> <span class="n">deviation_s</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"early"</span>
+    <span class="k">return</span> <span class="s2">"on_time"</span></div>
+
+
+
+<div class="viewcode-block" id="explain_prediction">
+<a class="viewcode-back" href="../../../backend.html#backend.prediction.rules.explain_prediction">[документация]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">explain_prediction</span><span class="p">(</span>
+    <span class="n">deviation_s</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Получить объяснимую причину и рекомендацию без отдельной ML-модели."""</span>
+
+    <span class="n">telemetry_age</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"telemetry_age_s"</span><span class="p">)</span>
+    <span class="n">stopped_share</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"stopped_share_10m"</span><span class="p">)</span>
+    <span class="n">mean_speed</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"mean_speed_10m"</span><span class="p">)</span>
+    <span class="n">last_speed</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"last_speed"</span><span class="p">)</span>
+    <span class="n">cur_dev</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cur_dev_s"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">telemetry_age</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">telemetry_age</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Нестабильная телеметрия"</span><span class="p">,</span>
+            <span class="s2">"Проверить канал связи с бортовым терминалом и использовать последнее известное состояние."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Опережение графика — самостоятельный тип инцидента. Не называем его</span>
+    <span class="c1"># «отрицательной задержкой»: оператору важен факт слишком раннего движения.</span>
+    <span class="k">if</span> <span class="n">deviation_s</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">60</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cur_dev</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">cur_dev</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">120</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="s2">"Накопленное опережение графика"</span><span class="p">,</span>
+                <span class="s2">"Предупредить водителя о необходимости соблюдать график движения и не прибывать раньше планового времени."</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">mean_speed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">last_speed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">mean_speed</span> <span class="o">&gt;=</span> <span class="mi">20</span>
+            <span class="ow">and</span> <span class="n">last_speed</span> <span class="o">&gt;=</span> <span class="n">mean_speed</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="s2">"Движение быстрее планового темпа"</span><span class="p">,</span>
+                <span class="s2">"Предупредить водителя об опережении и необходимости соблюдать график движения."</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Опережение графика"</span><span class="p">,</span>
+            <span class="s2">"Предупредить водителя о необходимости соблюдать график движения и усилить контроль следующих участков."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">stopped_share</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">stopped_share</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Длительный простой"</span><span class="p">,</span>
+            <span class="s2">"Связаться с водителем и уточнить причину остановки."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">mean_speed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">last_speed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">mean_speed</span> <span class="o">&lt;=</span> <span class="mi">8</span>
+        <span class="ow">and</span> <span class="n">last_speed</span> <span class="o">&lt;=</span> <span class="mi">8</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Снижение средней скорости"</span><span class="p">,</span>
+            <span class="s2">"Связаться с водителем и уточнить дорожную обстановку."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">cur_dev</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">cur_dev</span> <span class="o">&gt;</span> <span class="mi">120</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Накопленное отставание от графика"</span><span class="p">,</span>
+            <span class="s2">"Предупредить водителя об отклонении и усилить контроль следующих участков."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">deviation_s</span> <span class="o">&gt;</span> <span class="mi">120</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Высокий риск опоздания по динамике движения"</span><span class="p">,</span>
+            <span class="s2">"Связаться с водителем; при подтверждении проблемы рассмотреть диспетчерское регулирование."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">deviation_s</span> <span class="o">&gt;</span> <span class="mi">60</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"Формируется отставание от графика"</span><span class="p">,</span>
+            <span class="s2">"Усилить контроль ТС и при ухудшении связаться с водителем."</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="s2">"Существенных признаков отклонения не выявлено"</span><span class="p">,</span>
+        <span class="s2">"Продолжать мониторинг в штатном режиме."</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Авторские права . </p>
+  </div>
+
+  Собрано при помощи <a href="https://www.sphinx-doc.org/">Sphinx</a> с использованием
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">темы,</a>
+    предоставленной <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

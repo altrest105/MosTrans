@@ -1,0 +1,741 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="ru" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>backend.prediction.engine &mdash; MosTrans · Документация кода</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=9ca2116e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/translations.js?v=cd1d70c9"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Алфавитный указатель" href="../../../genindex.html" />
+    <link rel="search" title="Поиск" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            MosTrans — предиктор изменений графика
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Поиск в документации" aria-label="Поиск в документации" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Меню навигации">
+              <p class="caption" role="heading"><span class="caption-text">Содержание</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Архитектура</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../backend.html">Backend</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ml_service.html">ML Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API и Swagger</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Меню навигации для мобильных устройств" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">MosTrans — предиктор изменений графика</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Навигация по страницам">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Код модуля</a></li>
+      <li class="breadcrumb-item active">backend.prediction.engine</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Исходный код backend.prediction.engine</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">deque</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mean</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">perf_counter</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">backend.features.live</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiveFeatureBuilder</span><span class="p">,</span> <span class="n">haversine_m</span><span class="p">,</span> <span class="n">parse_point</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">backend.inference.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">MLServiceClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">backend.prediction.rules</span><span class="w"> </span><span class="kn">import</span> <span class="n">classify_risk</span><span class="p">,</span> <span class="n">deviation_direction</span><span class="p">,</span> <span class="n">explain_prediction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">backend.prediction.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">PredictionStore</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">backend.schedule.service</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScheduleService</span><span class="p">,</span> <span class="n">StopCandidate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">backend.telemetry.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">TelemetryStore</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">backend.transport.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">VehicleRegistry</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">LATENCY_SAMPLE_LIMIT</span> <span class="o">=</span> <span class="mi">1000</span>
+
+<span class="c1"># cur_dev_s в датасете — отклонение на последней уже пройденной остановке.</span>
+<span class="c1"># В realtime фактического расписания нет, поэтому прибытие оцениваем по GPS.</span>
+<span class="n">CUR_DEV_STOP_RADIUS_M</span> <span class="o">=</span> <span class="mf">50.0</span>
+<span class="n">CUR_DEV_EARLY_WINDOW_MIN</span> <span class="o">=</span> <span class="mf">5.0</span>
+<span class="n">CUR_DEV_LATE_WINDOW_MIN</span> <span class="o">=</span> <span class="mf">10.0</span>
+<span class="n">CUR_DEV_HISTORY_MIN</span> <span class="o">=</span> <span class="mf">15.0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_percentile</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">percentile</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Посчитать процентиль без внешних зависимостей."""</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">values</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">ordered</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ordered</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ordered</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">position</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ordered</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">percentile</span>
+    <span class="n">lower</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+    <span class="n">upper</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">lower</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ordered</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">fraction</span> <span class="o">=</span> <span class="n">position</span> <span class="o">-</span> <span class="n">lower</span>
+
+    <span class="k">return</span> <span class="n">ordered</span><span class="p">[</span><span class="n">lower</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">ordered</span><span class="p">[</span><span class="n">upper</span><span class="p">]</span> <span class="o">-</span> <span class="n">ordered</span><span class="p">[</span><span class="n">lower</span><span class="p">])</span> <span class="o">*</span> <span class="n">fraction</span>
+
+
+<div class="viewcode-block" id="PredictionEngine">
+<a class="viewcode-back" href="../../../backend.html#backend.prediction.engine.PredictionEngine">[документация]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PredictionEngine</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Автоматический online-инференс для активных NDTP-устройств."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">telemetry_store</span><span class="p">:</span> <span class="n">TelemetryStore</span><span class="p">,</span>
+        <span class="n">registry</span><span class="p">:</span> <span class="n">VehicleRegistry</span><span class="p">,</span>
+        <span class="n">schedule</span><span class="p">:</span> <span class="n">ScheduleService</span><span class="p">,</span>
+        <span class="n">feature_builder</span><span class="p">:</span> <span class="n">LiveFeatureBuilder</span><span class="p">,</span>
+        <span class="n">ml_client</span><span class="p">:</span> <span class="n">MLServiceClient</span><span class="p">,</span>
+        <span class="n">prediction_store</span><span class="p">:</span> <span class="n">PredictionStore</span><span class="p">,</span>
+        <span class="n">interval_s</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">stale_after_s</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">default_horizon_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">min_horizon_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">max_horizon_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_telemetry_store</span> <span class="o">=</span> <span class="n">telemetry_store</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_registry</span> <span class="o">=</span> <span class="n">registry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_schedule</span> <span class="o">=</span> <span class="n">schedule</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_feature_builder</span> <span class="o">=</span> <span class="n">feature_builder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ml_client</span> <span class="o">=</span> <span class="n">ml_client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_store</span> <span class="o">=</span> <span class="n">prediction_store</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interval_s</span> <span class="o">=</span> <span class="n">interval_s</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stale_after_s</span> <span class="o">=</span> <span class="n">stale_after_s</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_horizon_min</span> <span class="o">=</span> <span class="n">default_horizon_min</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_horizon_min</span> <span class="o">=</span> <span class="n">min_horizon_min</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_horizon_min</span> <span class="o">=</span> <span class="n">max_horizon_min</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Task</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_processed_time</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_started_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_first_prediction_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Последнее подтверждённое live-отклонение по каждому ТС.</span>
+        <span class="c1"># Если автобус между остановками, используем последнее измеренное значение,</span>
+        <span class="c1"># а не подставляем искусственный ноль.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_cur_dev_s</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Метаданные остановки, на которой последнее отклонение было подтверждено.</span>
+        <span class="c1"># Нужны, чтобы не пересчитывать cur_dev_s каждую секунду на одной и той</span>
+        <span class="c1"># же остановке и не откатываться назад по расписанию.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_cur_dev_meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_predictions</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">failed_predictions</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_cycle_ms</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_latency_ms</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span>
+            <span class="n">maxlen</span><span class="o">=</span><span class="n">LATENCY_SAMPLE_LIMIT</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ml_latency_ms</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="n">LATENCY_SAMPLE_LIMIT</span><span class="p">)</span>
+
+        <span class="c1"># Счётчики деградации и восстановления для демонстрации надёжности.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stale_transitions</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">degraded_transitions</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recoveries</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># Метрики, которыми можно подтвердить критерий горизонта на потоке.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizon_compliant_predictions</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizon_violations</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">no_hindsight_predictions</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hindsight_violations</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span>
+
+<div class="viewcode-block" id="PredictionEngine.start">
+<a class="viewcode-back" href="../../../backend.html#backend.prediction.engine.PredictionEngine.start">[документация]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_started_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">())</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"PredictionEngine запущен"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PredictionEngine.stop">
+<a class="viewcode-back" href="../../../backend.html#backend.prediction.engine.PredictionEngine.stop">[документация]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task</span>
+            <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"PredictionEngine остановлен"</span><span class="p">)</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span><span class="p">:</span>
+            <span class="n">started</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_cycle</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_cycle_ms</span> <span class="o">=</span> <span class="p">(</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">started</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1000.0</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_interval_s</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_process_cycle</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_telemetry_store</span><span class="o">.</span><span class="n">get_vehicle_ids</span><span class="p">():</span>
+            <span class="n">latest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_telemetry_store</span><span class="o">.</span><span class="n">get_latest</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">latest</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">age_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_telemetry_store</span><span class="o">.</span><span class="n">get_telemetry_age_s</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">age_s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">age_s</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stale_after_s</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_mark_stale</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">age_s</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Один прогноз на одну новую NDTP-точку. Повторно одну и ту же</span>
+            <span class="c1"># телеметрию не прогоняем через ML.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_processed_time</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span> <span class="o">==</span> <span class="n">latest</span><span class="o">.</span><span class="n">event_time</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_vehicle</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_last_processed_time</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">latest</span><span class="o">.</span><span class="n">event_time</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">total_predictions</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">failed_predictions</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_mark_degraded</span><span class="p">(</span>
+                    <span class="n">unit_id</span><span class="p">,</span>
+                    <span class="s2">"Не удалось обновить прогноз; используется последнее известное состояние."</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                    <span class="s2">"Ошибка online-инференса для unit_id=</span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">unit_id</span><span class="p">,</span>
+                    <span class="n">exc</span><span class="p">,</span>
+                <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_predict_vehicle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">prediction_started</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
+        <span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_telemetry_store</span><span class="o">.</span><span class="n">get_history</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">history</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">latest</span> <span class="o">=</span> <span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">prediction_time</span> <span class="o">=</span> <span class="n">latest</span><span class="o">.</span><span class="n">event_time</span>
+        <span class="n">tr_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_registry</span><span class="o">.</span><span class="n">get_tr_id</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+
+        <span class="c1"># Жёстко исключаем любую телеметрию из будущего относительно T.</span>
+        <span class="n">history_until_t</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">event</span>
+            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">history</span>
+            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">event_time</span> <span class="o">&lt;=</span> <span class="n">prediction_time</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">history_until_t</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">max_used_time</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">event_time</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">history_until_t</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">max_used_time</span> <span class="o">&gt;</span> <span class="n">prediction_time</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hindsight_violations</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Обнаружено использование телеметрии после точки T"</span><span class="p">)</span>
+
+        <span class="n">target</span><span class="p">:</span> <span class="n">StopCandidate</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Оперативный runtime всегда прогнозирует ровно на 12.5 минуты вперёд</span>
+        <span class="c1"># (значение приходит из DEFAULT_HORIZON_MINUTES).</span>
+        <span class="n">horizon_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_horizon_min</span>
+        <span class="n">cur_dev_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">cur_dev_source</span> <span class="o">=</span> <span class="s2">"unavailable"</span>
+        <span class="n">target_source</span> <span class="o">=</span> <span class="s2">"default"</span>
+
+        <span class="n">cur_dev_meta</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">tr_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schedule</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+            <span class="n">measured</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_measure_current_deviation_from_history</span><span class="p">(</span>
+                <span class="n">unit_id</span><span class="o">=</span><span class="n">unit_id</span><span class="p">,</span>
+                <span class="n">tr_id</span><span class="o">=</span><span class="n">tr_id</span><span class="p">,</span>
+                <span class="n">history</span><span class="o">=</span><span class="n">history_until_t</span><span class="p">,</span>
+                <span class="n">prediction_time</span><span class="o">=</span><span class="n">prediction_time</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">measured</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">measured_cur_dev</span><span class="p">,</span> <span class="n">measured_meta</span> <span class="o">=</span> <span class="n">measured</span>
+                <span class="n">previous_meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_cur_dev_meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+
+                <span class="c1"># Обновляем cur_dev только при реально новой пройденной</span>
+                <span class="c1"># остановке. Пока автобус стоит рядом с той же остановкой,</span>
+                <span class="c1"># значение не должно "ползти" вместе с настенными часами.</span>
+                <span class="n">is_new_stop</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">previous_meta</span> <span class="ow">is</span> <span class="kc">None</span>
+                    <span class="ow">or</span> <span class="n">measured_meta</span><span class="p">[</span><span class="s2">"planned_time"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">previous_meta</span><span class="p">[</span><span class="s2">"planned_time"</span><span class="p">]</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">is_new_stop</span><span class="p">:</span>
+                    <span class="n">cur_dev_s</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">measured_cur_dev</span><span class="p">)</span>
+                    <span class="n">cur_dev_meta</span> <span class="o">=</span> <span class="n">measured_meta</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_last_cur_dev_s</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">cur_dev_s</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_last_cur_dev_meta</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">measured_meta</span><span class="p">)</span>
+                    <span class="n">cur_dev_source</span> <span class="o">=</span> <span class="s2">"passed_stop_gps"</span>
+                <span class="k">elif</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_cur_dev_s</span><span class="p">:</span>
+                    <span class="n">cur_dev_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_cur_dev_s</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span>
+                    <span class="n">cur_dev_meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_cur_dev_meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+                    <span class="n">cur_dev_source</span> <span class="o">=</span> <span class="s2">"last_known"</span>
+            <span class="k">elif</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_cur_dev_s</span><span class="p">:</span>
+                <span class="c1"># Между остановками сохраняем задержку последней действительно</span>
+                <span class="c1"># обнаруженной остановки — это и есть смысл cur_dev_s.</span>
+                <span class="n">cur_dev_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_cur_dev_s</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span>
+                <span class="n">cur_dev_meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_cur_dev_meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+                <span class="n">cur_dev_source</span> <span class="o">=</span> <span class="s2">"last_known"</span>
+
+            <span class="n">window</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schedule</span><span class="o">.</span><span class="n">find_target_near_horizon</span><span class="p">(</span>
+                <span class="n">tr_id</span><span class="o">=</span><span class="n">tr_id</span><span class="p">,</span>
+                <span class="n">prediction_time</span><span class="o">=</span><span class="n">prediction_time</span><span class="p">,</span>
+                <span class="n">horizon_min</span><span class="o">=</span><span class="n">horizon_min</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">window</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_choose_target</span><span class="p">(</span>
+                    <span class="n">window</span><span class="o">.</span><span class="n">candidates</span><span class="p">,</span>
+                    <span class="n">latest</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span>
+                    <span class="n">latest</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">target_source</span> <span class="o">=</span> <span class="s2">"schedule"</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_horizon</span><span class="p">(</span><span class="n">horizon_min</span><span class="p">)</span>
+        <span class="c1"># Критерий горизонта относится к моменту прогноза, поэтому forecast_for</span>
+        <span class="c1"># всегда T + 12.5 мин. Плановая остановка хранится отдельно в target_stop.</span>
+        <span class="n">forecast_for</span> <span class="o">=</span> <span class="n">prediction_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">horizon_min</span><span class="p">)</span>
+
+        <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_builder</span><span class="o">.</span><span class="n">build</span><span class="p">(</span>
+            <span class="n">history</span><span class="o">=</span><span class="n">history_until_t</span><span class="p">,</span>
+            <span class="n">prediction_time</span><span class="o">=</span><span class="n">prediction_time</span><span class="p">,</span>
+            <span class="n">horizon_min</span><span class="o">=</span><span class="n">horizon_min</span><span class="p">,</span>
+            <span class="n">cur_dev_s</span><span class="o">=</span><span class="n">cur_dev_s</span><span class="p">,</span>
+            <span class="n">target_geom</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">target</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">operational</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_builder</span><span class="o">.</span><span class="n">operational_metrics</span><span class="p">(</span>
+            <span class="n">history</span><span class="o">=</span><span class="n">history_until_t</span><span class="p">,</span>
+            <span class="n">prediction_time</span><span class="o">=</span><span class="n">prediction_time</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ml_client</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+        <span class="n">generated_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+        <span class="n">prediction_latency_ms</span> <span class="o">=</span> <span class="p">(</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">prediction_started</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1000.0</span>
+
+        <span class="n">deviation_s</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">"prediction"</span><span class="p">])</span>
+        <span class="n">ml_latency_ms</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">"latency_ms"</span><span class="p">])</span>
+        <span class="n">risk</span> <span class="o">=</span> <span class="n">classify_risk</span><span class="p">(</span><span class="n">deviation_s</span><span class="p">)</span>
+        <span class="n">direction</span> <span class="o">=</span> <span class="n">deviation_direction</span><span class="p">(</span><span class="n">deviation_s</span><span class="p">)</span>
+        <span class="n">cause</span><span class="p">,</span> <span class="n">recommendation</span> <span class="o">=</span> <span class="n">explain_prediction</span><span class="p">(</span><span class="n">deviation_s</span><span class="p">,</span> <span class="n">features</span><span class="p">)</span>
+
+        <span class="n">previous</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">previous</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">previous</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">"ok"</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">recoveries</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">item</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"unit_id"</span><span class="p">:</span> <span class="n">unit_id</span><span class="p">,</span>
+            <span class="s2">"tr_id"</span><span class="p">:</span> <span class="n">tr_id</span><span class="p">,</span>
+            <span class="c1"># T — точка, на которой сформирован прогноз по доступной телеметрии.</span>
+            <span class="s2">"prediction_time"</span><span class="p">:</span> <span class="n">prediction_time</span><span class="p">,</span>
+            <span class="s2">"source_event_time"</span><span class="p">:</span> <span class="n">latest</span><span class="o">.</span><span class="n">source_event_time</span><span class="p">,</span>
+            <span class="s2">"telemetry_cutoff"</span><span class="p">:</span> <span class="n">max_used_time</span><span class="p">,</span>
+            <span class="c1"># Реальное время, когда Backend закончил формировать алерт.</span>
+            <span class="s2">"generated_at"</span><span class="p">:</span> <span class="n">generated_at</span><span class="p">,</span>
+            <span class="c1"># Будущий момент, для которого действует прогноз.</span>
+            <span class="s2">"forecast_for"</span><span class="p">:</span> <span class="n">forecast_for</span><span class="p">,</span>
+            <span class="s2">"horizon_min"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">horizon_min</span><span class="p">),</span>
+            <span class="s2">"horizon_compliant"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_horizon_compliant</span><span class="p">(</span><span class="n">horizon_min</span><span class="p">),</span>
+            <span class="c1"># Знаковое отклонение от графика: + = опоздание, - = опережение.</span>
+            <span class="s2">"deviation_s"</span><span class="p">:</span> <span class="n">deviation_s</span><span class="p">,</span>
+            <span class="s2">"absolute_deviation_s"</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">deviation_s</span><span class="p">),</span>
+            <span class="s2">"deviation_direction"</span><span class="p">:</span> <span class="n">direction</span><span class="p">,</span>
+            <span class="c1"># Временный совместимый alias для старых потребителей API.</span>
+            <span class="s2">"prediction_s"</span><span class="p">:</span> <span class="n">deviation_s</span><span class="p">,</span>
+            <span class="s2">"risk"</span><span class="p">:</span> <span class="n">risk</span><span class="p">,</span>
+            <span class="s2">"cause"</span><span class="p">:</span> <span class="n">cause</span><span class="p">,</span>
+            <span class="s2">"recommendation"</span><span class="p">:</span> <span class="n">recommendation</span><span class="p">,</span>
+            <span class="s2">"lat"</span><span class="p">:</span> <span class="n">latest</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span>
+            <span class="s2">"lon"</span><span class="p">:</span> <span class="n">latest</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span>
+            <span class="s2">"speed"</span><span class="p">:</span> <span class="n">latest</span><span class="o">.</span><span class="n">speed</span><span class="p">,</span>
+            <span class="s2">"heading"</span><span class="p">:</span> <span class="n">latest</span><span class="o">.</span><span class="n">heading</span><span class="p">,</span>
+            <span class="s2">"location_valid"</span><span class="p">:</span> <span class="n">latest</span><span class="o">.</span><span class="n">location_valid</span><span class="p">,</span>
+            <span class="s2">"target_stop"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"target_source"</span><span class="p">:</span> <span class="n">target_source</span><span class="p">,</span>
+            <span class="s2">"schedule_matched"</span><span class="p">:</span> <span class="n">target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"point_context_matched"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">"prediction_point"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"current_deviation_s"</span><span class="p">:</span> <span class="n">features</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cur_dev_s"</span><span class="p">),</span>
+            <span class="s2">"current_deviation_source"</span><span class="p">:</span> <span class="n">cur_dev_source</span><span class="p">,</span>
+            <span class="s2">"current_deviation_stop"</span><span class="p">:</span> <span class="n">cur_dev_meta</span><span class="p">,</span>
+            <span class="s2">"current_deviation_age_s"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="kc">None</span>
+                <span class="k">if</span> <span class="n">cur_dev_meta</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="nb">max</span><span class="p">(</span>
+                    <span class="mf">0.0</span><span class="p">,</span>
+                    <span class="p">(</span><span class="n">prediction_time</span> <span class="o">-</span> <span class="n">cur_dev_meta</span><span class="p">[</span><span class="s2">"observed_time"</span><span class="p">])</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">(),</span>
+                <span class="p">)</span>
+            <span class="p">),</span>
+            <span class="s2">"average_speed_kmh"</span><span class="p">:</span> <span class="n">operational</span><span class="p">[</span><span class="s2">"average_speed_kmh"</span><span class="p">],</span>
+            <span class="s2">"dwell_time_s"</span><span class="p">:</span> <span class="n">operational</span><span class="p">[</span><span class="s2">"dwell_time_s"</span><span class="p">],</span>
+            <span class="s2">"features"</span><span class="p">:</span> <span class="n">features</span><span class="p">,</span>
+            <span class="s2">"ml_latency_ms"</span><span class="p">:</span> <span class="n">ml_latency_ms</span><span class="p">,</span>
+            <span class="s2">"prediction_latency_ms"</span><span class="p">:</span> <span class="n">prediction_latency_ms</span><span class="p">,</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"ok"</span><span class="p">,</span>
+            <span class="s2">"degradation_reason"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">item</span><span class="p">[</span><span class="s2">"target_stop"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"stop_id"</span><span class="p">:</span> <span class="n">target</span><span class="o">.</span><span class="n">stop_id</span><span class="p">,</span>
+                <span class="s2">"planned_time"</span><span class="p">:</span> <span class="n">target</span><span class="o">.</span><span class="n">planned_time</span><span class="p">,</span>
+                <span class="s2">"address"</span><span class="p">:</span> <span class="n">target</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+                <span class="s2">"geom"</span><span class="p">:</span> <span class="n">target</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_store</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_latency_ms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prediction_latency_ms</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ml_latency_ms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ml_latency_ms</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_first_prediction_at</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_first_prediction_at</span> <span class="o">=</span> <span class="n">generated_at</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizon_compliant_predictions</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">no_hindsight_predictions</span> <span class="o">+=</span> <span class="mi">1</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_measure_current_deviation_from_history</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">unit_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">history</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+        <span class="n">prediction_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Оценить cur_dev_s по последней реально посещённой остановке.</span>
+
+<span class="sd">        В датасете ``cur_dev_s`` означает задержку на последней уже пройденной</span>
+<span class="sd">        остановке. Поэтому нельзя брать просто ближайшую к текущему GPS точку:</span>
+<span class="sd">        она может быть будущей остановкой, соседней остановкой обратного</span>
+<span class="sd">        направления или повторной точкой кольцевого маршрута.</span>
+
+<span class="sd">        Здесь для каждой плановой остановки ищем ПЕРВОЕ live-наблюдение в</span>
+<span class="sd">        радиусе 50 м в допустимом временном окне [план-5 мин; план+10 мин].</span>
+<span class="sd">        Среди подтверждённых остановок берём последнюю по фактическому времени</span>
+<span class="sd">        наблюдения. Само значение фиксируется при первом попадании в геозону и</span>
+<span class="sd">        затем сохраняется до следующей подтверждённой остановки.</span>
+<span class="sd">        """</span>
+
+        <span class="n">valid_events</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">event</span>
+            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">history</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">"location_valid"</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">"lon"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">"lat"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">event</span><span class="o">.</span><span class="n">event_time</span> <span class="o">&lt;=</span> <span class="n">prediction_time</span>
+            <span class="ow">and</span> <span class="n">event</span><span class="o">.</span><span class="n">event_time</span> <span class="o">&gt;=</span> <span class="n">prediction_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">CUR_DEV_HISTORY_MIN</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">valid_events</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">valid_events</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">event_time</span><span class="p">)</span>
+
+        <span class="n">days</span> <span class="o">=</span> <span class="p">{</span><span class="n">event</span><span class="o">.</span><span class="n">event_time</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">valid_events</span><span class="p">}</span>
+        <span class="n">days</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">prediction_time</span><span class="o">.</span><span class="n">date</span><span class="p">())</span>
+
+        <span class="n">stops</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">day</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">days</span><span class="p">):</span>
+            <span class="n">stops</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_schedule</span><span class="o">.</span><span class="n">route_for_day</span><span class="p">(</span><span class="n">tr_id</span><span class="p">,</span> <span class="n">day</span><span class="p">))</span>
+
+        <span class="n">search_start</span> <span class="o">=</span> <span class="n">valid_events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span>
+            <span class="n">minutes</span><span class="o">=</span><span class="n">CUR_DEV_LATE_WINDOW_MIN</span>
+        <span class="p">)</span>
+        <span class="n">search_end</span> <span class="o">=</span> <span class="n">prediction_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">CUR_DEV_EARLY_WINDOW_MIN</span><span class="p">)</span>
+
+        <span class="n">best</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="n">datetime</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">stop</span> <span class="ow">in</span> <span class="n">stops</span><span class="p">:</span>
+            <span class="n">planned_time</span> <span class="o">=</span> <span class="n">stop</span><span class="p">[</span><span class="s2">"planned_time"</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">planned_time</span> <span class="o">&lt;</span> <span class="n">search_start</span> <span class="ow">or</span> <span class="n">planned_time</span> <span class="o">&gt;</span> <span class="n">search_end</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">window_start</span> <span class="o">=</span> <span class="n">planned_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">CUR_DEV_EARLY_WINDOW_MIN</span><span class="p">)</span>
+            <span class="n">window_end</span> <span class="o">=</span> <span class="n">planned_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">CUR_DEV_LATE_WINDOW_MIN</span><span class="p">)</span>
+
+            <span class="n">first_hit</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">first_distance</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">valid_events</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">event_time</span> <span class="o">&lt;</span> <span class="n">window_start</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">event_time</span> <span class="o">&gt;</span> <span class="n">window_end</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="n">distance_m</span> <span class="o">=</span> <span class="n">haversine_m</span><span class="p">(</span>
+                    <span class="nb">float</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">lon</span><span class="p">),</span>
+                    <span class="nb">float</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">lat</span><span class="p">),</span>
+                    <span class="nb">float</span><span class="p">(</span><span class="n">stop</span><span class="p">[</span><span class="s2">"lon"</span><span class="p">]),</span>
+                    <span class="nb">float</span><span class="p">(</span><span class="n">stop</span><span class="p">[</span><span class="s2">"lat"</span><span class="p">]),</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">distance_m</span> <span class="o">&lt;=</span> <span class="n">CUR_DEV_STOP_RADIUS_M</span><span class="p">:</span>
+                    <span class="n">first_hit</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">event_time</span>
+                    <span class="n">first_distance</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">distance_m</span><span class="p">)</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">first_hit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">candidate</span> <span class="o">=</span> <span class="p">(</span><span class="n">first_hit</span><span class="p">,</span> <span class="n">planned_time</span><span class="p">,</span> <span class="n">first_distance</span><span class="p">,</span> <span class="n">stop</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">candidate</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">best</span><span class="p">[:</span><span class="mi">2</span><span class="p">]:</span>
+                <span class="n">best</span> <span class="o">=</span> <span class="n">candidate</span>
+
+        <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">observed_time</span><span class="p">,</span> <span class="n">planned_time</span><span class="p">,</span> <span class="n">distance_m</span><span class="p">,</span> <span class="n">stop</span> <span class="o">=</span> <span class="n">best</span>
+        <span class="n">deviation_s</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="n">observed_time</span> <span class="o">-</span> <span class="n">planned_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
+
+        <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"stop_id"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">stop</span><span class="p">[</span><span class="s2">"stop_id"</span><span class="p">]),</span>
+            <span class="s2">"address"</span><span class="p">:</span> <span class="n">stop</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"address"</span><span class="p">),</span>
+            <span class="s2">"planned_time"</span><span class="p">:</span> <span class="n">planned_time</span><span class="p">,</span>
+            <span class="s2">"observed_time"</span><span class="p">:</span> <span class="n">observed_time</span><span class="p">,</span>
+            <span class="s2">"distance_m"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">distance_m</span><span class="p">),</span>
+            <span class="s2">"unit_id"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">unit_id</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">deviation_s</span><span class="p">,</span> <span class="n">meta</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_horizon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">horizon_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_horizon_compliant</span><span class="p">(</span><span class="n">horizon_min</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">horizon_violations</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"Горизонт прогноза должен находиться в интервале "</span>
+            <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_min_horizon_min</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_horizon_min</span><span class="si">}</span><span class="s2">] минут, "</span>
+            <span class="sa">f</span><span class="s2">"получено </span><span class="si">{</span><span class="n">horizon_min</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_horizon_compliant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">horizon_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_min_horizon_min</span> <span class="o">&lt;</span> <span class="nb">float</span><span class="p">(</span><span class="n">horizon_min</span><span class="p">)</span>
+            <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_horizon_min</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_mark_stale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">age_s</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">existing</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">existing</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">existing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"stale"</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stale_transitions</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">existing</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"stale"</span>
+        <span class="n">existing</span><span class="p">[</span><span class="s2">"telemetry_age_s"</span><span class="p">]</span> <span class="o">=</span> <span class="n">age_s</span>
+        <span class="n">existing</span><span class="p">[</span><span class="s2">"degradation_reason"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"Нет новой NDTP-телеметрии; показывается последнее известное состояние."</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_store</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">existing</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_mark_degraded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">existing</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">existing</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">existing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"degraded"</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">degraded_transitions</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">existing</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"degraded"</span>
+        <span class="n">existing</span><span class="p">[</span><span class="s2">"degradation_reason"</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prediction_store</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">existing</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_choose_target</span><span class="p">(</span>
+        <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">StopCandidate</span><span class="p">],</span>
+        <span class="n">lon</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">lat</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StopCandidate</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">candidates</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">ranked</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">StopCandidate</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+            <span class="n">point</span> <span class="o">=</span> <span class="n">parse_point</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">point</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">stop_lon</span><span class="p">,</span> <span class="n">stop_lat</span> <span class="o">=</span> <span class="n">point</span>
+            <span class="n">ranked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="n">haversine_m</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">stop_lon</span><span class="p">,</span> <span class="n">stop_lat</span><span class="p">),</span>
+                    <span class="n">candidate</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ranked</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">ranked</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_pending_vehicles</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Количество ТС с новой телеметрией, ещё не прошедшей inference."""</span>
+
+        <span class="n">pending</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_telemetry_store</span><span class="o">.</span><span class="n">get_vehicle_ids</span><span class="p">():</span>
+            <span class="n">latest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_telemetry_store</span><span class="o">.</span><span class="n">get_latest</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">latest</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_processed_time</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span> <span class="o">!=</span> <span class="n">latest</span><span class="o">.</span><span class="n">event_time</span><span class="p">:</span>
+                <span class="n">pending</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">pending</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_latency_summary</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">deque</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">sample</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sample</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">"samples"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">"mean_ms"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">"p50_ms"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">"p95_ms"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">"max_ms"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"samples"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">),</span>
+            <span class="s2">"mean_ms"</span><span class="p">:</span> <span class="n">mean</span><span class="p">(</span><span class="n">sample</span><span class="p">),</span>
+            <span class="s2">"p50_ms"</span><span class="p">:</span> <span class="n">_percentile</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">),</span>
+            <span class="s2">"p95_ms"</span><span class="p">:</span> <span class="n">_percentile</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">),</span>
+            <span class="s2">"max_ms"</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="n">sample</span><span class="p">),</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="PredictionEngine.metrics">
+<a class="viewcode-back" href="../../../backend.html#backend.prediction.engine.PredictionEngine.metrics">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">successful</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_predictions</span>
+        <span class="n">horizon_pct</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">horizon_compliant_predictions</span> <span class="o">/</span> <span class="n">successful</span> <span class="o">*</span> <span class="mf">100.0</span>
+            <span class="k">if</span> <span class="n">successful</span>
+            <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="p">)</span>
+        <span class="n">no_hindsight_pct</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">no_hindsight_predictions</span> <span class="o">/</span> <span class="n">successful</span> <span class="o">*</span> <span class="mf">100.0</span>
+            <span class="k">if</span> <span class="n">successful</span>
+            <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="p">)</span>
+
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+        <span class="n">uptime_s</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_started_at</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_started_at</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="p">)</span>
+        <span class="n">first_prediction_s</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_started_at</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_first_prediction_at</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">first_prediction_s</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                <span class="mf">0.0</span><span class="p">,</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_first_prediction_at</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_started_at</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">(),</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"total_predictions"</span><span class="p">:</span> <span class="n">successful</span><span class="p">,</span>
+            <span class="s2">"failed_predictions"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">failed_predictions</span><span class="p">,</span>
+            <span class="s2">"last_cycle_ms"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_cycle_ms</span><span class="p">,</span>
+            <span class="s2">"interval_s"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interval_s</span><span class="p">,</span>
+            <span class="s2">"uptime_s"</span><span class="p">:</span> <span class="n">uptime_s</span><span class="p">,</span>
+            <span class="s2">"time_to_first_prediction_s"</span><span class="p">:</span> <span class="n">first_prediction_s</span><span class="p">,</span>
+            <span class="s2">"throughput_predictions_per_s"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">successful</span> <span class="o">/</span> <span class="n">uptime_s</span>
+                <span class="k">if</span> <span class="n">uptime_s</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="k">else</span> <span class="mf">0.0</span>
+            <span class="p">),</span>
+            <span class="s2">"pending_vehicles"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pending_vehicles</span><span class="p">(),</span>
+            <span class="s2">"processing_model"</span><span class="p">:</span> <span class="s2">"latest-state; очередь пакетов для ML не накапливается"</span><span class="p">,</span>
+            <span class="s2">"latency"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"end_to_end"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_latency_summary</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_prediction_latency_ms</span><span class="p">),</span>
+                <span class="s2">"ml"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_latency_summary</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ml_latency_ms</span><span class="p">),</span>
+            <span class="p">},</span>
+            <span class="s2">"reliability"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"stale_transitions"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stale_transitions</span><span class="p">,</span>
+                <span class="s2">"degraded_transitions"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">degraded_transitions</span><span class="p">,</span>
+                <span class="s2">"recoveries"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">recoveries</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">"horizon"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"min_exclusive"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_horizon_min</span><span class="p">,</span>
+                <span class="s2">"max_inclusive"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_horizon_min</span><span class="p">,</span>
+                <span class="s2">"default_min"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_horizon_min</span><span class="p">,</span>
+                <span class="s2">"compliant_predictions"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizon_compliant_predictions</span><span class="p">,</span>
+                <span class="s2">"violations"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">horizon_violations</span><span class="p">,</span>
+                <span class="s2">"compliance_pct"</span><span class="p">:</span> <span class="n">horizon_pct</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">"no_hindsight"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"compliant_predictions"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_hindsight_predictions</span><span class="p">,</span>
+                <span class="s2">"violations"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hindsight_violations</span><span class="p">,</span>
+                <span class="s2">"compliance_pct"</span><span class="p">:</span> <span class="n">no_hindsight_pct</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">}</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Авторские права . </p>
+  </div>
+
+  Собрано при помощи <a href="https://www.sphinx-doc.org/">Sphinx</a> с использованием
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">темы,</a>
+    предоставленной <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

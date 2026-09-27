@@ -1,0 +1,159 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="ru" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MosTrans · документация решения &mdash; MosTrans · Документация кода</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=9ca2116e"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/translations.js?v=cd1d70c9"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Алфавитный указатель" href="genindex.html" />
+    <link rel="search" title="Поиск" href="search.html" />
+    <link rel="next" title="Архитектура" href="architecture.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            MosTrans — предиктор изменений графика
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Поиск в документации" aria-label="Поиск в документации" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Меню навигации">
+              <p class="caption" role="heading"><span class="caption-text">Содержание</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Архитектура</a></li>
+<li class="toctree-l1"><a class="reference internal" href="backend.html">Backend</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml_service.html">ML Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API и Swagger</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Меню навигации для мобильных устройств" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">MosTrans — предиктор изменений графика</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Навигация по страницам">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">MosTrans · документация решения</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> Просмотреть исходный код страницы</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mostrans">
+<h1>MosTrans · документация решения<a class="headerlink" href="#mostrans" title="Ссылка на этот заголовок"></a></h1>
+<p>MosTrans — realtime-система раннего прогнозирования отклонений городского транспорта.
+Backend принимает NDTP-телеметрию, сопоставляет её с расписанием, формирует признаки и
+вызывает независимый CatBoost ML Service. Dashboard визуализирует текущее положение ТС,
+историю риска и прогноз на горизонте 10–15 минут.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Содержание</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Архитектура</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#realtime">Основной realtime-контур</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#id2">Горизонт прогноза</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#id3">Основные данные</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="backend.html">Backend</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-backend.ndtp.parser">NDTP parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-backend.ndtp.receiver">NDTP receiver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-backend.telemetry.state">Telemetry state</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-backend.transport.registry">Vehicle registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-backend.schedule.service">Schedule service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-backend.features.live">Online features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-backend.inference.client">ML client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-backend.prediction.engine">Prediction engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-backend.prediction.store">Prediction store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backend.html#module-backend.prediction.rules">Prediction rules</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ml_service.html">ML Service</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ml_service.html#module-ml_service.predictor">Predictor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml_service.html#module-ml_service.schemas">Pydantic schemas</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API и Swagger</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#backend-api">Backend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#ml-service-api">ML Service API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#openapi-json">OpenAPI JSON</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<section id="id1">
+<h2>Быстрые ссылки<a class="headerlink" href="#id1" title="Ссылка на этот заголовок"></a></h2>
+<ul class="simple">
+<li><p>Backend Swagger: <code class="docutils literal notranslate"><span class="pre">http://localhost:8000/docs</span></code></p></li>
+<li><p>Backend ReDoc: <code class="docutils literal notranslate"><span class="pre">http://localhost:8000/redoc</span></code></p></li>
+<li><p>ML Swagger: <code class="docutils literal notranslate"><span class="pre">http://localhost:8001/docs</span></code></p></li>
+<li><p>ML ReDoc: <code class="docutils literal notranslate"><span class="pre">http://localhost:8001/redoc</span></code></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Нижняя область">
+        <a href="architecture.html" class="btn btn-neutral float-right" title="Архитектура" accesskey="n" rel="next">Следующая <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Авторские права . </p>
+  </div>
+
+  Собрано при помощи <a href="https://www.sphinx-doc.org/">Sphinx</a> с использованием
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">темы,</a>
+    предоставленной <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

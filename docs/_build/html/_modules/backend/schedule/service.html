@@ -1,0 +1,655 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="ru" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>backend.schedule.service &mdash; MosTrans · Документация кода</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=9ca2116e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/translations.js?v=cd1d70c9"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Алфавитный указатель" href="../../../genindex.html" />
+    <link rel="search" title="Поиск" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            MosTrans — предиктор изменений графика
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Поиск в документации" aria-label="Поиск в документации" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Меню навигации">
+              <p class="caption" role="heading"><span class="caption-text">Содержание</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">Архитектура</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../backend.html">Backend</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ml_service.html">ML Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API и Swagger</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Меню навигации для мобильных устройств" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">MosTrans — предиктор изменений графика</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Навигация по страницам">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Код модуля</a></li>
+      <li class="breadcrumb-item active">backend.schedule.service</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Исходный код backend.schedule.service</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">backend.features.live</span><span class="w"> </span><span class="kn">import</span> <span class="n">haversine_m</span><span class="p">,</span> <span class="n">parse_point</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">MIN_HORIZON_MINUTES</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">MAX_HORIZON_MINUTES</span> <span class="o">=</span> <span class="mi">15</span>
+
+
+<div class="viewcode-block" id="StopCandidate">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.StopCandidate">[документация]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">StopCandidate</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Плановая остановка на конкретную календарную дату."""</span>
+
+    <span class="n">stop_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">planned_time</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">geom</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="TargetWindow">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.TargetWindow">[документация]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TargetWindow</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Плановая остановка внутри обязательного окна T+10..15 минут."""</span>
+
+    <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">planned_time</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">horizon_min</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">StopCandidate</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="NextStopWindow">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.NextStopWindow">[документация]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NextStopWindow</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Следующая остановка относительно текущего положения ТС в графике."""</span>
+
+    <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">planned_time</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">schedule_position_time</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">StopCandidate</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="NearestRouteStop">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.NearestRouteStop">[документация]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">NearestRouteStop</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Ближайшая по GPS остановка, принадлежащая расписанию конкретного ТС."""</span>
+
+    <span class="n">stop</span><span class="p">:</span> <span class="n">StopCandidate</span>
+    <span class="n">distance_m</span><span class="p">:</span> <span class="nb">float</span></div>
+
+
+
+<div class="viewcode-block" id="ScheduleService">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.ScheduleService">[документация]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ScheduleService</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Суточное расписание, повторяющееся каждый календарный день.</span>
+
+<span class="sd">    ``schedule_plan.csv`` хранит эталонный день. Для live-потока используется</span>
+<span class="sd">    время суток исходной строки, а дата берётся из текущего NDTP-времени.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schedule_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_schedule_by_tr</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_route_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">date</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">schedule_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Расписание не найдено: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">schedule_path</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">schedule</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">schedule_path</span><span class="p">)</span>
+        <span class="n">schedule</span><span class="p">[</span><span class="s2">"time_begin"</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">schedule</span><span class="p">[</span><span class="s2">"time_begin"</span><span class="p">])</span>
+        <span class="n">schedule</span> <span class="o">=</span> <span class="n">schedule</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s2">"tr_id"</span><span class="p">,</span> <span class="s2">"time_begin"</span><span class="p">],</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"stable"</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_schedule_by_tr</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">tr_id</span><span class="p">):</span> <span class="n">group</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">tr_id</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">schedule</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"tr_id"</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">"Загружено ТС с суточным расписанием: </span><span class="si">%d</span><span class="s2">"</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_schedule_by_tr</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_schedule_by_tr</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_materialize</span><span class="p">(</span><span class="n">source_time</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span> <span class="o">|</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">day</span><span class="p">:</span> <span class="n">date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">source_time</span><span class="p">)</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span>
+            <span class="n">day</span><span class="p">,</span>
+            <span class="n">time</span><span class="p">(</span>
+                <span class="n">hour</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span>
+                <span class="n">minute</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">minute</span><span class="p">,</span>
+                <span class="n">second</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">second</span><span class="p">,</span>
+                <span class="n">microsecond</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">microsecond</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_row_to_stop</span><span class="p">(</span><span class="n">row</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">planned_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StopCandidate</span><span class="p">:</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"geom"</span><span class="p">))</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"geom"</span><span class="p">))</span>
+        <span class="n">address</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"building_address"</span><span class="p">))</span>
+            <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"building_address"</span><span class="p">))</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">StopCandidate</span><span class="p">(</span>
+            <span class="n">stop_id</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"tt_action_item_id"</span><span class="p">]),</span>
+            <span class="n">planned_time</span><span class="o">=</span><span class="n">planned_time</span><span class="p">,</span>
+            <span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">,</span>
+            <span class="n">address</span><span class="o">=</span><span class="n">address</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_materialized_rows</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">start_day</span><span class="p">:</span> <span class="n">date</span><span class="p">,</span>
+        <span class="n">days</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">datetime</span><span class="p">]]:</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schedule_by_tr</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">tr_id</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">result</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">datetime</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">day_offset</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">days</span><span class="p">):</span>
+            <span class="n">day</span> <span class="o">=</span> <span class="n">start_day</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">day_offset</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">row</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_materialize</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"time_begin"</span><span class="p">],</span> <span class="n">day</span><span class="p">)))</span>
+
+        <span class="n">result</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="ScheduleService.find_stop">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.ScheduleService.find_stop">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_stop</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">stop_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">planned_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StopCandidate</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Найти остановку, применив её время суток к нужному дню."""</span>
+
+        <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schedule_by_tr</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">tr_id</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">candidates</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[</span>
+            <span class="n">rows</span><span class="p">[</span><span class="s2">"tt_action_item_id"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">stop_id</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">candidates</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">planned_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="n">candidates</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">materialized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_materialize</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"time_begin"</span><span class="p">],</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">date</span><span class="p">())</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_row_to_stop</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">materialized</span><span class="p">)</span>
+
+        <span class="n">expected</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">planned_time</span><span class="p">)</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span>
+        <span class="n">expected_seconds</span> <span class="o">=</span> <span class="n">expected</span><span class="o">.</span><span class="n">hour</span> <span class="o">*</span> <span class="mi">3600</span> <span class="o">+</span> <span class="n">expected</span><span class="o">.</span><span class="n">minute</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="n">expected</span><span class="o">.</span><span class="n">second</span>
+
+        <span class="n">best_row</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">best_delta</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">candidates</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">source</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"time_begin"</span><span class="p">])</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span>
+            <span class="n">source_seconds</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">hour</span> <span class="o">*</span> <span class="mi">3600</span> <span class="o">+</span> <span class="n">source</span><span class="o">.</span><span class="n">minute</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">+</span> <span class="n">source</span><span class="o">.</span><span class="n">second</span>
+            <span class="n">delta</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">source_seconds</span> <span class="o">-</span> <span class="n">expected_seconds</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">best_delta</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">delta</span> <span class="o">&lt;</span> <span class="n">best_delta</span><span class="p">:</span>
+                <span class="n">best_delta</span> <span class="o">=</span> <span class="n">delta</span>
+                <span class="n">best_row</span> <span class="o">=</span> <span class="n">row</span>
+
+        <span class="k">if</span> <span class="n">best_row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_row_to_stop</span><span class="p">(</span>
+            <span class="n">best_row</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_materialize</span><span class="p">(</span><span class="n">best_row</span><span class="p">[</span><span class="s2">"time_begin"</span><span class="p">],</span> <span class="n">expected</span><span class="o">.</span><span class="n">date</span><span class="p">()),</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ScheduleService.find_target_window">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.ScheduleService.find_target_window">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_target_window</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">prediction_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TargetWindow</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Найти первое плановое событие в (T+10, T+15]."""</span>
+
+        <span class="n">prediction_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">prediction_time</span><span class="p">)</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">window_start</span> <span class="o">=</span> <span class="n">prediction_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">MIN_HORIZON_MINUTES</span><span class="p">)</span>
+        <span class="n">window_end</span> <span class="o">=</span> <span class="n">prediction_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">MAX_HORIZON_MINUTES</span><span class="p">)</span>
+
+        <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_materialized_rows</span><span class="p">(</span>
+                <span class="n">tr_id</span><span class="p">,</span>
+                <span class="n">prediction_time</span><span class="o">.</span><span class="n">date</span><span class="p">(),</span>
+                <span class="n">days</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">planned</span> <span class="o">&gt;</span> <span class="n">window_start</span> <span class="ow">and</span> <span class="n">planned</span> <span class="o">&lt;=</span> <span class="n">window_end</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">candidates</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">earliest_time</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">planned</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">)</span>
+        <span class="n">earliest_rows</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="n">candidates</span>
+            <span class="k">if</span> <span class="n">planned</span> <span class="o">==</span> <span class="n">earliest_time</span>
+        <span class="p">]</span>
+
+        <span class="n">stops</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_row_to_stop</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="n">earliest_rows</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">TargetWindow</span><span class="p">(</span>
+            <span class="n">tr_id</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">tr_id</span><span class="p">),</span>
+            <span class="n">planned_time</span><span class="o">=</span><span class="n">earliest_time</span><span class="p">,</span>
+            <span class="n">horizon_min</span><span class="o">=</span><span class="nb">float</span><span class="p">((</span><span class="n">earliest_time</span> <span class="o">-</span> <span class="n">prediction_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="mf">60.0</span><span class="p">),</span>
+            <span class="n">candidates</span><span class="o">=</span><span class="n">stops</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ScheduleService.find_target_near_horizon">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.ScheduleService.find_target_near_horizon">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_target_near_horizon</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">prediction_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+        <span class="n">horizon_min</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TargetWindow</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Найти остановку внутри (T+10, T+15], ближайшую к T+horizon.</span>
+
+<span class="sd">        Runtime использует фиксированный ML-горизонт 12.5 минуты. Если в</span>
+<span class="sd">        расписании нет остановки ровно через 12.5 минуты, выбирается ближайшая</span>
+<span class="sd">        плановая остановка внутри обязательного окна 10–15 минут.</span>
+<span class="sd">        """</span>
+
+        <span class="n">prediction_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">prediction_time</span><span class="p">)</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">desired_time</span> <span class="o">=</span> <span class="n">prediction_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">horizon_min</span><span class="p">))</span>
+        <span class="n">window_start</span> <span class="o">=</span> <span class="n">prediction_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">MIN_HORIZON_MINUTES</span><span class="p">)</span>
+        <span class="n">window_end</span> <span class="o">=</span> <span class="n">prediction_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">MAX_HORIZON_MINUTES</span><span class="p">)</span>
+
+        <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_materialized_rows</span><span class="p">(</span>
+                <span class="n">tr_id</span><span class="p">,</span>
+                <span class="n">prediction_time</span><span class="o">.</span><span class="n">date</span><span class="p">(),</span>
+                <span class="n">days</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">planned</span> <span class="o">&gt;</span> <span class="n">window_start</span> <span class="ow">and</span> <span class="n">planned</span> <span class="o">&lt;=</span> <span class="n">window_end</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">candidates</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">best_time</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">planned</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">),</span>
+            <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">planned</span><span class="p">:</span> <span class="nb">abs</span><span class="p">((</span><span class="n">planned</span> <span class="o">-</span> <span class="n">desired_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()),</span>
+        <span class="p">)</span>
+        <span class="n">best_rows</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="n">candidates</span>
+            <span class="k">if</span> <span class="n">planned</span> <span class="o">==</span> <span class="n">best_time</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">TargetWindow</span><span class="p">(</span>
+            <span class="n">tr_id</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">tr_id</span><span class="p">),</span>
+            <span class="n">planned_time</span><span class="o">=</span><span class="n">best_time</span><span class="p">,</span>
+            <span class="n">horizon_min</span><span class="o">=</span><span class="nb">float</span><span class="p">((</span><span class="n">best_time</span> <span class="o">-</span> <span class="n">prediction_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="mf">60.0</span><span class="p">),</span>
+            <span class="n">candidates</span><span class="o">=</span><span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_row_to_stop</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="n">best_rows</span>
+            <span class="p">],</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ScheduleService.service_status">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.ScheduleService.service_status">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_status</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Определить, идёт ли ТС сейчас по суточному расписанию.</span>
+
+<span class="sd">        Статус считается только по текущему календарному дню. Мы намеренно</span>
+<span class="sd">        не считаем первую остановку следующего дня "следующей" для уже</span>
+<span class="sd">        завершившего работу ТС. Это особенно важно для live-эмулятора,</span>
+<span class="sd">        который может продолжать присылать координаты после конца графика.</span>
+<span class="sd">        """</span>
+
+        <span class="n">current_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">current_time</span><span class="p">)</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schedule_by_tr</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">tr_id</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rows</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"schedule_missing"</span><span class="p">,</span>
+                <span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Расписание не найдено"</span><span class="p">,</span>
+                <span class="s2">"first_planned_time"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">"last_planned_time"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="n">planned_times</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_materialize</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">current_time</span><span class="o">.</span><span class="n">date</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">[</span><span class="s2">"time_begin"</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="n">first_planned</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">planned_times</span><span class="p">)</span>
+        <span class="n">last_planned</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">planned_times</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">current_time</span> <span class="o">&lt;</span> <span class="n">first_planned</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="s2">"not_started"</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="s2">"Рейс ещё не начался"</span>
+        <span class="k">elif</span> <span class="n">current_time</span> <span class="o">&gt;</span> <span class="n">last_planned</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="s2">"finished"</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="s2">"Рейс завершён"</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="s2">"active"</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="s2">"На маршруте"</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
+            <span class="s2">"text"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+            <span class="s2">"first_planned_time"</span><span class="p">:</span> <span class="n">first_planned</span><span class="p">,</span>
+            <span class="s2">"last_planned_time"</span><span class="p">:</span> <span class="n">last_planned</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="ScheduleService.find_next_stop_window">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.ScheduleService.find_next_stop_window">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_next_stop_window</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+        <span class="n">current_deviation_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NextStopWindow</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Найти следующую остановку по текущему положению ТС в расписании.</span>
+
+<span class="sd">        Если известно текущее отклонение, сначала восстанавливаем условное</span>
+<span class="sd">        положение ТС на временной оси расписания: ``T - cur_dev_s``.</span>
+<span class="sd">        Поэтому для опаздывающего автобуса следующей может оставаться остановка,</span>
+<span class="sd">        чьё плановое время уже немного прошло по настенным часам.</span>
+<span class="sd">        """</span>
+
+        <span class="n">current_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">current_time</span><span class="p">)</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">deviation_s</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">current_deviation_s</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">current_deviation_s</span><span class="p">)</span>
+        <span class="n">schedule_position_time</span> <span class="o">=</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">deviation_s</span><span class="p">)</span>
+
+        <span class="c1"># Для карточки оператора следующая остановка относится только к</span>
+        <span class="c1"># текущему суточному графику. После последней остановки дня не</span>
+        <span class="c1"># перепрыгиваем на первый рейс следующего дня.</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_materialized_rows</span><span class="p">(</span>
+                <span class="n">tr_id</span><span class="p">,</span>
+                <span class="n">schedule_position_time</span><span class="o">.</span><span class="n">date</span><span class="p">(),</span>
+                <span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">planned</span> <span class="o">&gt;</span> <span class="n">schedule_position_time</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">candidates</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">earliest_time</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">planned</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">)</span>
+        <span class="n">earliest_rows</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="n">candidates</span>
+            <span class="k">if</span> <span class="n">planned</span> <span class="o">==</span> <span class="n">earliest_time</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">NextStopWindow</span><span class="p">(</span>
+            <span class="n">tr_id</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">tr_id</span><span class="p">),</span>
+            <span class="n">planned_time</span><span class="o">=</span><span class="n">earliest_time</span><span class="p">,</span>
+            <span class="n">schedule_position_time</span><span class="o">=</span><span class="n">schedule_position_time</span><span class="p">,</span>
+            <span class="n">candidates</span><span class="o">=</span><span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_row_to_stop</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="n">earliest_rows</span>
+            <span class="p">],</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ScheduleService.find_nearest_route_stop">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.ScheduleService.find_nearest_route_stop">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_nearest_route_stop</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+        <span class="n">lon</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">lat</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NearestRouteStop</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Найти ближайшую по GPS остановку, принадлежащую этому ``tr_id``.</span>
+
+<span class="sd">        Это fallback для realtime-режима. Он нужен, когда временное</span>
+<span class="sd">        сопоставление с расписанием не смогло определить следующую остановку.</span>
+<span class="sd">        Остановки других ТС никогда не рассматриваются. Если одна и та же</span>
+<span class="sd">        географическая точка встречается в расписании несколько раз, берётся</span>
+<span class="sd">        ближайшее будущее плановое прохождение этой точки.</span>
+<span class="sd">        """</span>
+
+        <span class="n">current_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">current_time</span><span class="p">)</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schedule_by_tr</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">tr_id</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rows</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">best</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">StopCandidate</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">geom</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"geom"</span><span class="p">))</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"geom"</span><span class="p">))</span>
+            <span class="n">point</span> <span class="o">=</span> <span class="n">parse_point</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">point</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">stop_lon</span><span class="p">,</span> <span class="n">stop_lat</span> <span class="o">=</span> <span class="n">point</span>
+            <span class="n">distance_m</span> <span class="o">=</span> <span class="n">haversine_m</span><span class="p">(</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">),</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">stop_lon</span><span class="p">),</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">stop_lat</span><span class="p">),</span>
+            <span class="p">)</span>
+
+            <span class="n">planned</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_materialize</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"time_begin"</span><span class="p">],</span> <span class="n">current_time</span><span class="o">.</span><span class="n">date</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">planned</span> <span class="o">&lt;=</span> <span class="n">current_time</span><span class="p">:</span>
+                <span class="n">planned</span> <span class="o">+=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">seconds_until</span> <span class="o">=</span> <span class="p">(</span><span class="n">planned</span> <span class="o">-</span> <span class="n">current_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+            <span class="n">stop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_row_to_stop</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+            <span class="n">candidate</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">distance_m</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">seconds_until</span><span class="p">),</span> <span class="n">stop</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">candidate</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">best</span><span class="p">[:</span><span class="mi">2</span><span class="p">]:</span>
+                <span class="n">best</span> <span class="o">=</span> <span class="n">candidate</span>
+
+        <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">NearestRouteStop</span><span class="p">(</span><span class="n">stop</span><span class="o">=</span><span class="n">best</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">distance_m</span><span class="o">=</span><span class="n">best</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="ScheduleService.route_for_day">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.ScheduleService.route_for_day">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">route_for_day</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">day</span><span class="p">:</span> <span class="n">date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Получить суточный маршрут, разделённый на рейсы по длинным паузам."""</span>
+
+        <span class="n">cache_key</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">tr_id</span><span class="p">),</span> <span class="n">day</span><span class="p">)</span>
+        <span class="n">cached</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_route_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cache_key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cached</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">cached</span><span class="p">]</span>
+
+        <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_schedule_by_tr</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">tr_id</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">result</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">segment_id</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">previous_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">geom</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"geom"</span><span class="p">))</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"geom"</span><span class="p">))</span>
+            <span class="n">point</span> <span class="o">=</span> <span class="n">parse_point</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">point</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">point</span>
+            <span class="n">planned_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_materialize</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"time_begin"</span><span class="p">],</span> <span class="n">day</span><span class="p">)</span>
+
+            <span class="c1"># Не соединяем разные рейсы одной длинной прямой.</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">previous_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="ow">and</span> <span class="p">(</span><span class="n">planned_time</span> <span class="o">-</span> <span class="n">previous_time</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">60</span>
+            <span class="p">):</span>
+                <span class="n">segment_id</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">"stop_id"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"tt_action_item_id"</span><span class="p">]),</span>
+                    <span class="s2">"planned_time"</span><span class="p">:</span> <span class="n">planned_time</span><span class="p">,</span>
+                    <span class="s2">"lon"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">),</span>
+                    <span class="s2">"lat"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span>
+                    <span class="s2">"segment_id"</span><span class="p">:</span> <span class="n">segment_id</span><span class="p">,</span>
+                    <span class="s2">"address"</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="kc">None</span>
+                        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"building_address"</span><span class="p">))</span>
+                        <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"building_address"</span><span class="p">))</span>
+                    <span class="p">),</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+            <span class="n">previous_time</span> <span class="o">=</span> <span class="n">planned_time</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_route_cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ScheduleService.estimate_current_deviation">
+<a class="viewcode-back" href="../../../backend.html#backend.schedule.service.ScheduleService.estimate_current_deviation">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate_current_deviation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tr_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+        <span class="n">lon</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">lat</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">search_minutes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
+        <span class="n">max_distance_m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">200.0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Оценить текущее отклонение по ближайшей плановой остановке.</span>
+
+<span class="sd">        Возвращается знаковое отклонение: ``+`` означает опоздание, ``-`` —</span>
+<span class="sd">        опережение. Значение считается только когда live GPS действительно</span>
+<span class="sd">        находится рядом с плановой остановкой около текущего времени.</span>
+<span class="sd">        """</span>
+
+        <span class="n">current_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">current_time</span><span class="p">)</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">search_minutes</span><span class="p">)</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">current_time</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">search_minutes</span><span class="p">)</span>
+
+        <span class="n">best</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">datetime</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">planned</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_materialized_rows</span><span class="p">(</span><span class="n">tr_id</span><span class="p">,</span> <span class="n">current_time</span><span class="o">.</span><span class="n">date</span><span class="p">(),</span> <span class="n">days</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">planned</span> <span class="o">&lt;</span> <span class="n">start</span> <span class="ow">or</span> <span class="n">planned</span> <span class="o">&gt;</span> <span class="n">end</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">geom</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"geom"</span><span class="p">))</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"geom"</span><span class="p">))</span>
+            <span class="n">point</span> <span class="o">=</span> <span class="n">parse_point</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">point</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">stop_lon</span><span class="p">,</span> <span class="n">stop_lat</span> <span class="o">=</span> <span class="n">point</span>
+            <span class="n">distance</span> <span class="o">=</span> <span class="n">haversine_m</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span> <span class="n">stop_lon</span><span class="p">,</span> <span class="n">stop_lat</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">distance</span> <span class="o">&gt;</span> <span class="n">max_distance_m</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">distance</span> <span class="o">&lt;</span> <span class="n">best</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">best</span> <span class="o">=</span> <span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">planned</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">best</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="n">current_time</span> <span class="o">-</span> <span class="n">best</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Авторские права . </p>
+  </div>
+
+  Собрано при помощи <a href="https://www.sphinx-doc.org/">Sphinx</a> с использованием
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">темы,</a>
+    предоставленной <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
