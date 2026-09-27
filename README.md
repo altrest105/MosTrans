@@ -15,10 +15,17 @@ MosTrans принимает телеметрию транспортных сре
 
 ### Запуск всей системы
 
+Сначала скопировать проект:
+
+```bash
+git clone https://github.com/altrest105/MosTrans.git
+cd MosTrans
+```
+
 Из корня проекта:
 
 ```bash
-docker compose up --build
+docker compose up -d
 ```
 
 После старта доступны:
@@ -57,7 +64,7 @@ docker compose down
 
 ## Как подать NDTP-поток на решение
 
-После запуска системы командой `docker compose up --build` Backend начинает слушать входящий NDTP-поток на TCP-порту **9201** хост-машины:
+После запуска системы командой `docker compose up -d` Backend начинает слушать входящий NDTP-поток на TCP-порту **9201** хост-машины:
 
 ```text
 TCP <HOST>:9201
@@ -123,10 +130,9 @@ curl -s -X POST http://localhost:18080/api/config \
 После подачи потока данные появляются в системе автоматически. Для проверки можно открыть:
 
 ```text
-Dashboard:          http://localhost:3000
-Backend /vehicles:  http://localhost:8000/vehicles
-Backend /predictions:
-                    http://localhost:8000/predictions
+Dashboard:            http://localhost:3000
+Backend /vehicles:    http://localhost:8000/vehicles
+Backend /predictions: http://localhost:8000/predictions
 ```
 
 ---
@@ -278,7 +284,7 @@ distance_to_target_m
 Platform score: 1.00000
 ```
 
-Точные локальные и runtime-метрики доступны на странице **«Метрики»** в dashboard. Runtime-значения не фиксируются в README, так как пересчитываются на фактическом потоке при каждом запуске.
+Точные локальные и runtime-метрики доступны на странице **«Метрики»** в dashboard. Runtime-значения не фиксируются в README, так как пересчитываются на фактическом потоке при каждом запуске. Весь код модели представлен в папке `ml`, `ml/src/train_model.py` - обучение модели, `ml/scripts/make_submission.py` - создание сабмита.
 
 ---
 
@@ -439,7 +445,7 @@ Swagger содержит описание endpoint'ов, структуры за
 
 ## Sphinx
 
-Документация к коду собирается через Sphinx.
+Документация к коду собирается через Sphinx. В репозитории она уже собрана `docs/_build/html/index.html`
 
 Сборка:
 
@@ -470,6 +476,13 @@ http://localhost:8088/
 ---
 
 ## Быстрая проверка решения для жюри
+
+0. Скопировать репозиторий и перейти в директорию :
+
+   ```bash
+   git clone https://github.com/altrest105/MosTrans.git
+   cd MosTrans
+   ```
 
 1. Из корня проекта выполнить:
 
